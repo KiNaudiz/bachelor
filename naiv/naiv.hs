@@ -14,32 +14,32 @@ import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
 
 timestep :: (RealFloat a, Num a) =>
-    [Complex a] -> a -> a -> a -> ( Complex a -> Complex a ) -> a -> a -> [Complex a]
+    [Complex a] -> a -> a -> a -> ( a -> Complex a -> a ) -> a -> a -> [Complex a]
 timestep [] _ _ _ _ _ _ = []
 timestep (lh:ls) x0 dt dx u e m = lh : xstep lh ls x0
     where   --xstep :: (Num a) => Complex a -> [Complex a] -> [Complex a]
             xstep _ [] _            = []
             xstep _ (s1:[]) _       = [s1]
             xstep s0 (s1:s2:ss) x   = calc s0 s1 s2 x dt dx u e m : xstep s1 (s2:ss) (x+dx)
-calc :: (RealFloat a, Num a) => Complex a -> Complex a -> Complex a -> a -> a -> a -> ( Complex a -> Complex a) -> a -> a -> Complex a
+calc :: (RealFloat a, Num a) => Complex a -> Complex a -> Complex a -> a -> a -> a -> ( a -> Complex a -> a) -> a -> a -> Complex a
 calc s0 s1 s2 x dt dx u e m =
         (0:+1) * dt' *
         ( e' * ( s0 - 2*s1 + s2 ) /  (2*m'*dx'**2) -
-          u x' * s1 / e' )
+          u' * s1 / e' )
     where
         e'  = e:+0
         m'  = m:+0
         dt' = dt:+0
         dx' = dx:+0
-        x'  = x:+0
+        u'  = u x s1 :+0
 
 initFromList :: (RealFloat a, Num a) =>
-    [Complex a] -> a -> a -> a -> ( Complex a -> Complex a ) -> a -> a -> [[Complex a]]
+    [Complex a] -> a -> a -> a -> ( a -> Complex a -> a ) -> a -> a -> [[Complex a]]
 initFromList l x0 dt dx u e m =
         iterate (\l' -> timestep l' x0 dt dx u e m) l
 
 initFromFun :: (RealFloat a, Num a) =>
-    ( a -> Complex a ) -> (a,a) -> a -> a -> ( Complex a -> Complex a ) -> a ->
+    ( a -> Complex a ) -> (a,a) -> a -> a -> ( a -> Complex a -> a ) -> a ->
     a -> [[Complex a]]
 initFromFun f (x0,xe) dt dx = initFromList l x0 dt dx
     where   l = next x0
@@ -49,9 +49,9 @@ initFromFun f (x0,xe) dt dx = initFromList l x0 dt dx
 
 main :: IO ()
 main = do
-        let a       = 0.1:+0 -- µeV µm^2
-            g       = 5*10**(-4):+0 -- µeV µm^3 
-            u x     = a * x*x + g * (magnitude x :+ 0) * x
+        let a       = 0.1 -- µeV µm^2
+            g       = 5*10**(-4) -- µeV µm^3
+            u x phi = a * x*x + g * magnitude phi **2
             e       = 0.6582119 -- µeV ns (= hbar)
             dt      = 0.1 :: Double -- ns
             dx      = 0.01 :: Double -- µm

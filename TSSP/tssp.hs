@@ -1,123 +1,123 @@
--- TSSP (time-splitting sine pseudospectral) method
--- units:
---   mass: m_e (mass of an electron)
+{-# OPTIONS -Wall #-}
+--   mass: 0.351764 mass of an electron
 --   energy: µeV
 --   distance: µm
 --   time:  ns
 
+module TSSP
+    ( System (..)
+    , Interval
+    , Potential
+    , Wavepoint
+    , Wave
+    , Waveset (..)
+    , hbar
+    , tssp'
+    , tssp
+    )
+where
+
 import Data.Complex
-import Graphics.Gnuplot.Simple
-import Graphics.Gnuplot.Value.Tuple
 
-type Potential a    = (a -> Complex a -> a)
-type Interval a     = (a,a)
-type Wavepoint a    = Complex a
-type Wave a         = [Wavepoint a]
+type Interval a = (a,a)
+type Potential a = ( a -> a )
+type Wavepoint a = Complex a
+type Wave a = [Wavepoint a]
 
-mu :: (Floating a,Integral b) => b -> Interval a -> a
-mu l (x0,xe) = pi*fromIntegral l/(xe-x0)
+data System a =
+    System
+    {
+        sysInterval :: Interval a
+      , sysMass :: a -- in 0.351764 * mass of an electron
+      , sysPotential :: Potential a -- in µeV
+      , sysCoupling :: a -- in µeV µm³
+    }
 
-step1 :: (RealFloat a)
-    => Wavepoint a -> Potential a -> a -> a -> a -> Wavepoint a
-step1 p u x dt e = exp(-i*dt'*u'/(2*e')) * p
-    where   i   = 0:+1
-            dt' = dt :+ 0
-            e'  = e :+ 0
-            u'  = u x p :+ 0
+data Waveset a =
+    Waveset
+    {
+        wsetWaves :: [Wave a]
+      , wsetDx :: a
+      , wsetDt :: a
+      , wsetX0 :: a
+    }
 
-step2 :: (Integral b,RealFloat a)
-    => Wavepoint a -> Potential a -> a -> a -> a -> b -> b -> Wavepoint a
-step2 p u x dt e l j =
-        2/fromIntegral j * summands 1
-    where   p' = step1 p u x dt e
-            summands j'
-                | j' == j   = 0
-                | otherwise =
-                    p'*sin(fromIntegral(l*j')*pi/fromIntegral j) + summands j'+1
+effPot :: (RealFloat a) => System a -> a -> Wavepoint a -> a
+effPot system x phi = sysPotential system x +
+    sysCoupling system * magnitude phi**2
 
-step3 :: (Integral b,RealFloat a) =>
-    Wave a -> Interval a -> a -> a -> b -> b -> Wavepoint a
-step3 w (x0,xe) dt e l j =
+hbar :: (Fractional a) => a
+hbar = 0.6582119 -- µeV ns
+
+tssp' :: (RealFloat a) => System a -> Wave a -> a -> a -> Waveset a
+tssp' system wave0 dx dt =
+        Waveset waves dx dt x0
+    where   int@(x0,_)  = sysInterval system
+            len         = length wave0 - 1
+            pot         = effPot system
+            waves       = iterate timestep wave0
+            m           = sysMass system
+
+            timestep w  = wave4 
+                where
+                    wave1@(wh1:wl1)     = step w x0
+                        where   step [] _       = []
+                                step (wh:wl) x  = applyHalfPot x wh dt pot : step wl (x+dx)
+                    wave2@(wh2:wl2)     = wh1 : step wl1 1
+                        where   step [] _           = undefined
+                                step (wh':[]) _     = [wh']
+                                step (_:wl') l    =
+                                    normalize wave1 len l : step wl' (l+1)
+                    wave3  = wh2 : step wl2 1
+                        where   step [] _           = undefined
+                                step (wh':[]) _     = [wh']
+                                step (_:wl') j    =
+                                    applyKin wave2 int dt m len j : step wl' (j+1)
+                    wave4               = step wave3 x0
+                        where   step [] _       = []
+                                step (wh:wl) x  = applyHalfPot x wh dt pot : step wl (x+dx)
+
+applyHalfPot :: RealFloat a => a -> Wavepoint a -> a -> (a -> Wavepoint a -> a) -> Wavepoint a
+applyHalfPot x phi dt pot =
+        exp(-i * dt_c * v / ( 2 * hbar_c )) * phi
+    where   v   = pot x phi :+ 0
+            i   = 0:+1
+            hbar_c  = hbar :+ 0
+            dt_c    = dt :+ 0
+
+normalize :: (RealFloat a) => Wave a -> Int -> Int -> Wavepoint a
+normalize [] _ _        = undefined
+normalize (_:wl) len l  =
+        2/fromIntegral len * summands wl 1
+    where   summands  [] _          = undefined
+            summands (_:[]) _       = 0
+            summands (wh':wl') j    =
+                wh'*sin(fromIntegral(l*j)*pi/fromIntegral len) + summands wl' (j+1)
+
+applyKin :: (RealFloat a) => Wave a -> Interval a -> a -> a -> Int -> Int -> Wavepoint a
+applyKin [] _ _ _ _ _       = undefined
+applyKin (_:wl) int dt m len j  =
         summands wl 1
-    where   (_:wl)             = w
-            summands [] _       = undefined
-            summands (_:[]) _   = 0
-            summands (wh':wl') l' = exp(-i*dt'*e'*mu') * wh' *
-                    sin(fromIntegral (l'*j)*pi/fromIntegral l) +
-                    summands wl' (l'+1)
-                where   i   = 0:+1
-                        e'  = e:+0
-                        mu' = mu l' (x0,xe) :+0
-                        dt' = dt:+0
+    where   summands  [] _          = undefined
+            summands (_:[]) _       = 0
+            summands (wh':wl') l    =
+                    exp(-i*dt_c*hbar_c*mu_l2/(2*m_c)) *
+                    wh'*sin(pi*fromIntegral(l*j)/fromIntegral len) + summands wl' (l+1)
+                where   mu_l    = mu int l
+                        mu_l2   = mu_l**2 :+ 0
+            m_c     = m :+ 0
+            dt_c    = dt :+ 0
+            i       = 0:+1
+            hbar_c  = hbar :+ 0
 
-step4 :: (Integral b,RealFloat a) =>
-    Wave a -> Wavepoint a -> Interval a -> Potential a -> a -> a -> a -> b -> b -> Wavepoint a
-step4 w p int u x dt e l j =
-        exp(-i*dt'*u'/(2*e')) * step3 w int x dt e l j
-    where   i   = 0:+1
-            e'  = e:+0
-            dt' = dt:+0
-            u'  = u x p :+ 0
-            w'  = map (\p' -> step2 p' u x dt e l j) w
+mu :: Floating a => Interval a -> Int -> a
+mu (x0,xe) l    = pi*fromIntegral l/(xe-x0)
 
-timestep :: (Integral b,RealFloat a,Num a) 
-    => Wave a -> Interval a -> a -> a -> Potential a-> a -> b -> Wave a
-timestep [] _ _ _ _ _ _ = undefined
-timestep w@(wh:wl) int@(x0,_) dx dt u e l = wh : locs wl x0 0
-    where   locs [] _ _         = undefined
-            locs (wh':[]) _ _   = []
-            locs (wh':wl') x j  =
-                step4 w wh' int u x dt e l j : locs wl' (x+dx) (j+1)
-
-initFromList :: (RealFloat a,Integral b) =>
-    Wave a -> Interval a -> a -> a -> Potential a -> a -> [Wave a]
-initFromList w int dx dt u e =
-        iterate (\w' -> timestep w int dx dt u e l) w
-    where   l = length w
-
-initFromFun :: (RealFloat a, Num a) =>
-    ( a -> Complex a ) -> Interval a -> a -> a -> Potential a -> a -> [Wave a]
-initFromFun f int@(x0,xe) dx dt u e = initFromList w int dx dt u e
-    where   w = next x0
-            next x
-                | x <= xe   = f x : next (x+dx)
-                | otherwise = []
-
-main :: IO ()
-main = do
-        let a       = 0.1 -- µeV µm^2
-            g       = 5*10**(-4) -- µeV µm^3
-            u x phi = a * x*x + g * magnitude phi **2
-            e       = 0.6582119 -- µeV ns (= hbar)
-            dt      = 0.1 :: Double -- ns
-            dx      = 0.01 :: Double -- µm
-            x0      = -2.0
-            -- m       = 2.6 -- m_e
-            -- phi0    = [0,0,0,1,1,0,0,0] :: [Complex Double]
-            mu      = 1.0 :: Double
-            sigma   = 0.1 :: Double
-            interval= (x0,2.0)
-            phi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
-            phiT    = take 500 $ initFromFun phi0 interval dx dt u e :: [Wave Double]
-        putStr $ unlines $ map show phiT
-        plotManyComplex phiT x0 dt dx
-        return ()
-
-plotComplex :: (Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
-    => [Attribute] -> [Complex a] -> a -> a -> IO ()
-plotComplex a l x0 dx = do
-        let real = addLoc x0 $ map realPart l
-            imag = addLoc x0 $ map imagPart l
-        plotLists a [real,imag];
-    where   addLoc _ []        = []
-            addLoc x (lh:ll)   = (x,lh) : addLoc (x+dx) ll
-
-plotManyComplex :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
-    => [[Complex a]] -> a -> a -> a -> IO ()
-plotManyComplex l x0 dt dx = p l 0
-    where
-        p [] _ = return ()
-        p (lh:ll) t = do
-            -- plotComplex [PNG ("output/plot"++show t),Title ("t="++show t++"ns"),XLabel="x/us",YLabel="phi"] lh dx
-            plotComplex [PNG ("output/plot"++show t),Title ("t="++show t++"ns")] lh x0 dx
-            p ll (t+dt)
+tssp :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
+tssp system wave0 dx dt =
+        tssp' system wave0' dx dt
+    where   (x0,xe) = sysInterval system
+            renderwave x
+                | x > xe    = []
+                | otherwise = wave0 x : renderwave (x+dx)
+            wave0'  = renderwave x0

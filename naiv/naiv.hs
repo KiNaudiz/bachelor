@@ -53,17 +53,18 @@ main = do
             g       = 5*10**(-4) -- µeV µm^3
             u x phi = a * x*x + g * magnitude phi **2
             e       = 0.6582119 -- µeV ns (= hbar)
-            dt      = 0.1 :: Double -- ns
+            dt      = 0.001 :: Double -- ns
             dx      = 0.01 :: Double -- µm
             x0      = -2.0
-            m       = 2.6 -- m_e
+            -- m       = 2.6 -- m_e
+            m       = 7.4 :: Double -- 2.6 m_e
             -- phi0    = [0,0,0,1,1,0,0,0] :: [Complex Double]
             mu      = 1.0 :: Double
             sigma   = 0.1 :: Double
             interval= (x0,2.0)
             phi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
             phiT    = take 500 $ initFromFun phi0 interval dt dx u e m :: [[Complex Double]]
-        putStr $ unlines $ map show phiT
+        -- putStr $ unlines $ map show phiT
         plotManyComplex phiT x0 dt dx
         return ()
 

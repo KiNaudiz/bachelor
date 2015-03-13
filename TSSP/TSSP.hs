@@ -56,21 +56,31 @@ data Waveset a =
 --  helper functions
 
 -- effective potential = extern potential + coupling
-effPot :: (RealFloat a) => System a -> a -> Wavepoint a -> a
-effPot system x phi = sysPotential system x +
-    sysCoupling system * magnitude phi**2
+effPot :: (RealFloat a) 
+    => System a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
+effPot system coupl x phi = sysPotential system x +
+    sysCoupling system * coupl x phi
+
+-- karth coupling
+couplKarth :: (RealFloat a) => a -> Wavepoint a -> a
+couplKarth _ phi = magnitude phi ** 2
+
+-- spherical coupling
+couplSphere :: (RealFloat a) => a -> Wavepoint a -> a
+couplSphere r phi = magnitude phi ** 2 / r
 
 -- hbar constant
 hbar :: (Fractional a) => a
 hbar = 0.6582119 -- µeV ns
 
 -- tssp using a list as starting condition
-tssp' :: (RealFloat a) => System a -> Wave a -> a -> a -> Waveset a
-tssp' system wave0 dx dt =
+tssp' :: (RealFloat a)
+    => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
+tssp' system wave0 coupl dx dt =
         Waveset waves dx dt x0
     where   int@(x0,_)  = sysInterval system
             len         = length wave0 - 1
-            pot         = effPot system
+            pot         = effPot system coupl
             waves       = iterate timestep wave0
             m           = sysMass system
 
@@ -151,14 +161,14 @@ backtransSphere wset =
             dx      = wsetDx wset
             waves'  = map (`trans` x0) waves
             trans [] _      = []
-            trans (wh:wl) x = wh*(x:+0) : trans wl (x+dx)
+            trans (wh:wl) x = wh/(x:+0) : trans wl (x+dx)
 
 --------------------------------------------------------------------------------
 --  Function solving NLSE
 
 tssp :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
 tssp system wave0 dx dt =
-        tssp' system wave0' dx dt
+        tssp' system wave0' couplKarth dx dt
     where   (x0,xe) = sysInterval system
             renderwave x
                 | x > xe    = []
@@ -174,5 +184,5 @@ tsspSphere system wave0 dx dt =
                 | x > xe    = []
                 | otherwise = p0 x : renderwave (x+dx)
             p0'     = renderwave x0
-            res'    = tssp' system p0' dx dt
+            res'    = tssp' system p0' couplSphere dx dt
             waves0' = backtransSphere res'

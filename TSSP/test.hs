@@ -5,7 +5,29 @@ import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
 
 main :: IO ()
-main = harmOsz
+main = harmOszSphere
+
+harmOszSphere :: IO ()
+harmOszSphere = do
+        let m       = 7.4 -- 2.6 m_e
+            a       = 0.1 :: Double -- µeV µm²
+            -- a = 0
+            g       = 5*10**(-4) :: Double -- µeV µm³
+            u x     = a*x**2 -- harm
+            int     = (0,30)
+            system  = System int m u g
+
+            sigma   = 0.5
+            mu      = 10
+            psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
+
+            dx      = 0.05
+            dt      = 1
+
+            waveT   = tsspSphere system psi0 dx dt
+        -- putStr $ unlines $ map show list
+        plotWaveset waveT "harmpot_sphere/"
+        return ()
 
 harmOsz :: IO ()
 harmOsz = do
@@ -36,4 +58,6 @@ plotWaveset set fname = do
             dt   = wsetDt set
             dx   = wsetDx set
             x0   = wsetX0 set
-        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-20,20),YRange (-0.1,0.5)] fname list x0 dt dx
+        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-0,20),YRange (-0.1,1.2)] fname list x0 dt dx
+
+

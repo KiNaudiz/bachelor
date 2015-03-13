@@ -5,7 +5,10 @@ import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
 
 main :: IO ()
-main = do
+main = harmOsz
+
+harmOsz :: IO ()
+harmOsz = do
         let m       = 7.4 -- 2.6 m_e
             a       = 0.1 :: Double -- µeV µm²
             -- a = 0

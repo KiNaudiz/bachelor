@@ -20,6 +20,7 @@ module TSSP
     , hbar
     , tssp'
     , tssp
+    , tsspSphere
     )
 where
 
@@ -140,6 +141,18 @@ applyKin (_:wl) int dt m len j  =
 mu :: Floating a => Interval a -> Int -> a
 mu (x0,xe) l    = pi*fromIntegral l/(xe-x0)
 
+-- helper function
+backtransSphere :: (RealFloat a) => Waveset a -> Waveset a
+backtransSphere wset =
+        wset'
+    where   wset'   = wset { wsetWaves = waves' }
+            waves   = wsetWaves wset
+            x0      = wsetX0 wset
+            dx      = wsetDx wset
+            waves'  = map (`trans` x0) waves
+            trans [] _      = []
+            trans (wh:wl) x = wh*(x:+0) : trans wl (x+dx)
+
 --------------------------------------------------------------------------------
 --  Function solving NLSE
 
@@ -151,3 +164,15 @@ tssp system wave0 dx dt =
                 | x > xe    = []
                 | otherwise = wave0 x : renderwave (x+dx)
             wave0'  = renderwave x0
+
+tsspSphere :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
+tsspSphere system wave0 dx dt =
+        waves0'
+    where   (x0,xe) = sysInterval system
+            p0 x    = wave0 x * (x:+0)
+            renderwave x
+                | x > xe    = []
+                | otherwise = p0 x : renderwave (x+dx)
+            p0'     = renderwave x0
+            res'    = tssp' system p0' dx dt
+            waves0' = backtransSphere res'

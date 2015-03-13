@@ -6,6 +6,7 @@ import Graphics.Gnuplot.Value.Tuple
 
 main :: IO ()
 main = harmOszSphere
+-- main = harmOsz
 
 harmOszSphere :: IO ()
 harmOszSphere = do
@@ -17,39 +18,46 @@ harmOszSphere = do
             int     = (0,30)
             system  = System int m u g
 
-            sigma   = 0.5
+            sigma   = 1
             mu      = 10
-            psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
-
-            dx      = 0.05
-            dt      = 1
-
-            waveT   = tsspSphere system psi0 dx dt
-        -- putStr $ unlines $ map show list
-        plotWaveset waveT "harmpot_sphere/"
-        return ()
-
-harmOsz :: IO ()
-harmOsz = do
-        let m       = 7.4 -- 2.6 m_e
-            a       = 0.1 :: Double -- µeV µm²
-            -- a = 0
-            g       = 5*10**(-4) :: Double -- µeV µm³
-            u x     = a*x**2 -- harm
-            int     = (-40,40)
-            system  = System int m u g
-
-            sigma   = 0.5
-            mu      = 10
-            psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
+            -- psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
+            psi0 x  = 1/sqrt(sqrt pi*sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
             dx      = 0.05
             dt      = 0.5
 
-            waveT   = tssp system psi0 dx dt
+            waveT   = tsspSphere system psi0 dx dt
+            list    = wsetWaves waveT
+            densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
         -- putStr $ unlines $ map show list
-        plotWaveset waveT "harmpot/"
+        putStr $ unlines $ map show densT
+        -- plotWaveset waveT "harmpot_sphere/"
         return ()
+
+-- harmOsz :: IO ()
+-- harmOsz = do
+--         let m       = 7.4 -- 2.6 m_e
+--             a       = 0.1 :: Double -- µeV µm²
+--             -- a = 0
+--             g       = 5*10**(-4) :: Double -- µeV µm³
+--             u x     = a*x**2 -- harm
+--             int     = (-40,40)
+--             system  = System int m u g
+--
+--             sigma   = 0.5
+--             mu      = 10
+--             psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
+--
+--             dx      = 0.05
+--             dt      = 0.5
+--
+--             waveT   = tssp system psi0 dx dt
+--             list    = wsetWaves waveT
+--             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
+--         -- putStr $ unlines $ map show list
+--         -- plotWaveset waveT "harmpot/"
+--         putStr $ unlines $ map show densT
+--         return ()
 
 plotWaveset :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
     => Waveset a -> String -> IO ()

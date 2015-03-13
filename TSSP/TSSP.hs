@@ -21,6 +21,7 @@ module TSSP
     , tssp'
     , tssp
     , tsspSphere
+    , renderWave
     )
 where
 
@@ -161,7 +162,15 @@ backtransSphere wset =
             dx      = wsetDx wset
             waves'  = map (`trans` x0) waves
             trans [] _      = []
+            trans (_:wl) 0  = 0 : trans wl dx
             trans (wh:wl) x = wh/(x:+0) : trans wl (x+dx)
+
+-- render a wave function to a list
+renderWave :: (RealFloat a) => (a -> Wavepoint a) -> Interval a -> a -> Wave a
+renderWave wave0 (x0,xe) dx =
+        map wave0 xs
+    where   n   = (ceiling $ (xe-x0)/dx) :: Integer
+            xs  = [x0 + fromInteger m*dx | m <- [0..n-1]]
 
 --------------------------------------------------------------------------------
 --  Function solving NLSE
@@ -169,20 +178,14 @@ backtransSphere wset =
 tssp :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
 tssp system wave0 dx dt =
         tssp' system wave0' couplKarth dx dt
-    where   (x0,xe) = sysInterval system
-            renderwave x
-                | x > xe    = []
-                | otherwise = wave0 x : renderwave (x+dx)
-            wave0'  = renderwave x0
+    where   int     = sysInterval system
+            wave0'  = renderWave wave0 int dx
 
 tsspSphere :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
 tsspSphere system wave0 dx dt =
         waves0'
-    where   (x0,xe) = sysInterval system
+    where   int     = sysInterval system
             p0 x    = wave0 x * (x:+0)
-            renderwave x
-                | x > xe    = []
-                | otherwise = p0 x : renderwave (x+dx)
-            p0'     = renderwave x0
+            p0'     = renderWave p0 int dx
             res'    = tssp' system p0' couplSphere dx dt
             waves0' = backtransSphere res'

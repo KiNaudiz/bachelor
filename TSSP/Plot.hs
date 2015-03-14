@@ -11,8 +11,8 @@ plotComplex a l x0 dx = do
         let real = addLoc x0 $ map realPart l
             imag = addLoc x0 $ map imagPart l
             density = addLoc x0 $ map ((**2) . magnitude) l
-        -- plotLists a [real,imag,density];
-        plotLists a [density];
+        plotLists a [real,imag,density];
+        -- plotLists a [density];
     where   addLoc _ []        = []
             addLoc x (lh:ll)   = (x,lh) : addLoc (x+dx) ll
 

@@ -68,7 +68,7 @@ couplKarth _ phi = magnitude phi ** 2
 
 -- spherical coupling
 couplSphere :: (RealFloat a) => a -> Wavepoint a -> a
-couplSphere r phi = magnitude phi ** 2 / r
+couplSphere r phi = magnitude phi ** 2 / r**2
 
 -- hbar constant
 hbar :: (Fractional a) => a

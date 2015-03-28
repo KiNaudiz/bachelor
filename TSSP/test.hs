@@ -14,9 +14,9 @@ harmOszSphere = do
         let m       = 7.4 -- 2.6 m_e
             a       = 0.1 :: Double -- µeV µm²
             -- a       = 0 :: Double -- µeV µm²
-            -- g       = 5*10**(-4) :: Double -- µeV µm³
+            g       = 5*10**(-4) :: Double -- µeV µm³
             -- g       = 0 :: Double -- µeV µm³ testing
-            g       = 5*10**(-2) :: Double -- µeV µm³ testing
+            -- g       = 5*10**(-2) :: Double -- µeV µm³ testing
             u x     = a*x**2 -- harm
             int     = (0,60)
             system  = System int m u g
@@ -34,7 +34,7 @@ harmOszSphere = do
             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
         -- putStr $ unlines $ map show list
         -- putStr $ unlines $ map show densT
-        plotWaveset waveT "harmpot_sphere/gh_"
+        plotWaveset waveT "harmpot_sphere/"
         return ()
 
 -- hydrogen :: IO ()

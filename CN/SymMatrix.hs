@@ -148,3 +148,8 @@ m `mulMS` s = s `mulSM` m
 
 (**.):: Num a => BandMatrix a -> a -> BandMatrix a
 (**.) = mulMS
+
+cholesky :: RealFloat a => BandMatrix a -> BandMatrix a
+cholesky = undefined
+
+

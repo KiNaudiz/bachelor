@@ -170,7 +170,7 @@ renderWave :: (RealFloat a) => (a -> Wavepoint a) -> Interval a -> a -> Wave a
 renderWave wave0 (x0,xe) dx =
         map wave0 xs
     where   n   = (ceiling $ (xe-x0)/dx) :: Integer
-            xs  = [x0 + fromInteger m*dx | m <- [0..n-1]]
+            xs  = [x0 + fromInteger m*dx | m <- [0..n]]
 
 --------------------------------------------------------------------------------
 --  Function solving NLSE

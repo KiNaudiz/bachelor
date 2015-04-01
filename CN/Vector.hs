@@ -67,8 +67,10 @@ v ! i = (A.!) (vec v) i
 -- TODO: eraseInVec, vecIns
 
 zipWith :: (a -> a -> a) -> BandVector a -> BandVector a -> BandVector a
-zipWith f (BV v) (BV w) = BV $ listArray (0,n) arr
-    where   n   = max (last $ indices v) (last $ indices w)
+zipWith f vv@(BV v) wv@(BV w)
+    | vecLength wv /= n = error "zipWith: dimension error"
+    | otherwise = BV $ listArray (1,n) arr
+    where   n   = vecLength vv
             va  = elems v
             wa  = elems w
             arr = L.zipWith f va wa

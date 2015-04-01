@@ -37,7 +37,8 @@ potentialMtx :: (RealFloat a) => System a -> a -> Operator a
 potentialMtx sys dx =
         diagonalMx diag'
     where   diag'   = map (\x -> pot x :+ 0) xs
-            xs      = takeWhile (<= xe) [x0 + dx * fromInteger h | h <- [0..]]
+            n       = waveEntries (x0,xe) dx
+            xs      = take n [x0 + dx * fromInteger h | h <- [0..]]
             (x0,xe) = sysInterval sys
             pot     = sysPotential sys
 
@@ -46,8 +47,9 @@ couplingMtx :: (RealFloat a)
 couplingMtx sys coupl wave dx =
         diagonalMx diag'
     where   diag'       = map (\(x,psi) -> couplConst * coupl x psi :+ 0) xpsi
+            n           = waveEntries (x0,xe) dx
             xpsi        = zip xs $ fillVec wave
-            xs          = takeWhile (<= xe)
+            xs          = take n
                 [x0 + dx * fromInteger h | h <- [0..]]
             (x0,xe)     = sysInterval sys
             couplConst  = sysCoupling sys
@@ -67,10 +69,10 @@ renderWave :: (RealFloat a) => (a -> Wavepoint a) -> Interval a -> a -> Wave a
 renderWave wave0 int@(x0,_) dx =
         bandList $ map wave0 xs
     where   n   = waveEntries int dx
-            xs  = [x0 + fromIntegral m*dx | m <- [0..n]]
+            xs  = [x0 + fromIntegral m*dx | m <- [0..n-1]]
 
 waveEntries :: (RealFrac a) => Interval a -> a -> Int
-waveEntries (x0,xe) dx = ceiling $ (xe-x0)/dx
+waveEntries (x0,xe) dx = ceiling $ (xe-x0)/dx + 1
 
 tssp' :: (RealFloat a)
     => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a

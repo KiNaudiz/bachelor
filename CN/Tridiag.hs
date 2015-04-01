@@ -135,7 +135,9 @@ trans (TDM (a,b,c)) = TDM (c,b,a)
 
 mulMV :: Num a => TridiagMatrix a -> BandVector a -> BandVector a
 m `mulMV` v
-    | dim m /= vecLength v = error "dimension error"
+    | dim m /= vecLength v = error $
+            "mulMV: dimension error, dim m = " ++ show (dim m) ++ ", dim v = "
+            ++ show (vecLength v)
     | otherwise = bandList l
     where   entry' i    = sum $ L.zipWith (*) ms vs
                 where   ms  = map (\j -> m -#- (i,j)) [a..b]
@@ -161,7 +163,7 @@ m `mulMS` s = s `mulSM` m
 
 mul :: Num a => TridiagMatrix a -> TridiagMatrix a -> TridiagMatrix a
 m1 `mul` m2
-    | n /= dim m2   = error "dimension error"
+    | n /= dim m2   = error "mul: dimension error"
     | otherwise = TDM (g,h,j)
     where   aa      = vec $ m1 -!- (-1)
             ba      = vec $ m1 -!- 0

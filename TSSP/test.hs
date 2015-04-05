@@ -14,9 +14,9 @@ harmOszSphere = do
         let m       = 7.4 -- 2.6 m_e
             a       = 0.1 :: Double -- µeV µm²
             -- a       = 0 :: Double -- µeV µm²
-            g       = 5*10**(-4) :: Double -- µeV µm³
-            -- g       = 0 :: Double -- µeV µm³ testing
-            -- g       = 5*10**(-2) :: Double -- µeV µm³ testing
+            -- g       = 5*10**(-4) :: Double -- µeV µm³
+            -- g       = 0 :: Double -- µeV µm³ testng
+            g       = 5*10**(-6) :: Double -- µeV µm³ testing
             u x     = a*x**2 -- harm
             int     = (0,60)
             system  = System int m u g
@@ -31,10 +31,10 @@ harmOszSphere = do
 
             waveT   = tsspSphere system psi0 dx dt
             list    = wsetWaves waveT
-            densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
+            densT   = take 160 $ map ( (*dx) . sum . map ((**2) . magnitude) ) list
         -- putStr $ unlines $ map show list
         -- putStr $ unlines $ map show densT
-        plotWaveset waveT "harmpot_sphere/"
+        plotWaveset waveT "harmpot_sphere/coupl-6/"
         return ()
 
 -- hydrogen :: IO ()
@@ -65,7 +65,7 @@ harmOszSphere = do
 --         -- putStr $ unlines $ map show densT
 --         plotWaveset waveT "hydrogen/"
 --         return ()
-
+--
 -- harmOsz :: IO ()
 -- harmOsz = do
 --         let m       = 7.4 -- 2.6 m_e
@@ -81,14 +81,14 @@ harmOszSphere = do
 --             psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 --
 --             dx      = 0.05
---             dt      = 0.5
+--             dt      = 1
 --
 --             waveT   = tssp system psi0 dx dt
 --             list    = wsetWaves waveT
 --             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
 --         -- putStr $ unlines $ map show list
---         -- plotWaveset waveT "harmpot/"
---         putStr $ unlines $ map show densT
+--         plotWaveset waveT "harmpot/"
+--         -- putStr $ unlines $ map show densT
 --         return ()
 
 plotWaveset :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
@@ -98,5 +98,5 @@ plotWaveset set fname = do
             dt   = wsetDt set
             dx   = wsetDx set
             x0   = wsetX0 set
-        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-0,13),YRange (-0.1,5.0)] fname list x0 dt dx
+        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-0,20),YRange (-0.1,2.1)] fname list x0 dt dx
         -- plotManyComplex [XLabel "x/um",YLabel "|psi|^2"] fname list x0 dt dx

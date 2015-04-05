@@ -4,6 +4,7 @@ import Data.Complex
 import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
 import Vector
+import Tridiag
 
 main :: IO ()
 -- main = harmOszSphere
@@ -67,23 +68,35 @@ main = harmOsz
 --         plotWaveset waveT "hydrogen/"
 --         return ()
 
+m,a,g :: Double
+m       = 7.4 -- 2.6 m_e
+-- a       = 0.1
+a = 1 :: Double
+-- g       = 5*10**(-4)
+g = 0
+u :: Potential Double
+u x     = a*x**2 -- harm
+int :: Interval Double
+int     = (-40,40)
+system :: System Double
+system  = System int m u g
+
+sigma,mu :: Double
+sigma   = 0.5
+mu      = 5
+psi0 :: Double -> Complex Double
+psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
+
+dx,dt :: Double
+-- dx      = 0.05
+-- dt      = 0.5
+dx      = 0.05
+dt      = 1
+
+
 harmOsz :: IO ()
 harmOsz = do
-        let m       = 7.4 -- 2.6 m_e
-            a       = 0.1 :: Double -- µeV µm²
-            -- a = 0
-            g       = 5*10**(-4) :: Double -- µeV µm³
-            u x     = a*x**2 -- harm
-            int     = (-40,40)
-            system  = System int m u g
-
-            sigma   = 0.5
-            mu      = 10
-            psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
-
-            dx      = 0.05
-            dt      = 0.5
-
+        let
             waveT   = tssp system psi0 dx dt
             list    = map fillVec $ wsetWaves waveT
             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
@@ -99,6 +112,6 @@ plotWaveset set fname = do
             dt   = wsetDt set
             dx   = wsetDx set
             x0   = wsetX0 set
-        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-0,13),YRange (-0.1,5.0)] fname list x0 dt dx
+        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-20,20),YRange (-0.1,1.1)] fname list x0 dt dx
         -- plotManyComplex [XLabel "x/um",YLabel "|psi|^2"] fname list x0 dt dx
 

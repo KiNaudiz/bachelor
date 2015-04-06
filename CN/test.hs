@@ -11,33 +11,17 @@ main :: IO ()
 -- main = hydrogen
 main = harmOsz
 
--- harmOszSphere :: IO ()
--- harmOszSphere = do
---         let m       = 7.4 -- 2.6 m_e
---             a       = 0.1 :: Double -- µeV µm²
---             -- a       = 0 :: Double -- µeV µm²
---             g       = 5*10**(-4) :: Double -- µeV µm³
---             -- g       = 0 :: Double -- µeV µm³ testing
---             -- g       = 5*10**(-2) :: Double -- µeV µm³ testing
---             u x     = a*x**2 -- harm
---             int     = (0,60)
---             system  = System int m u g
---
---             sigma   = 1
---             mu      = 10
---             -- psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
---             psi0 x  = 1/sqrt(sqrt pi*sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
---
---             dx      = 0.05
---             dt      = 0.5
---
---             waveT   = tsspSphere system psi0 dx dt
---             list    = wsetWaves waveT
---             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
---         -- putStr $ unlines $ map show list
---         -- putStr $ unlines $ map show densT
---         plotWaveset waveT "harmpot_sphere/"
---         return ()
+harmOszSphere :: IO ()
+harmOszSphere = do
+        let int'    = (0.0000001,40)
+            system' = system { sysInterval = int' }
+            waveT   = tsspSphere system' psi0 dx dt
+            list    = map fillVec $ wsetWaves waveT
+            densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
+        -- putStr $ unlines $ map show list
+        -- putStr $ unlines $ map show densT
+        plotWaveset waveT "harmpot_sphere/"
+        return ()
 
 -- hydrogen :: IO ()
 -- hydrogen = do
@@ -70,12 +54,12 @@ main = harmOsz
 
 m,a,g :: Double
 m       = 7.4 -- 2.6 m_e
--- a       = 0.1
-a = 1 :: Double
+a       = 0.1
+-- a = 0 :: Double
 -- g       = 5*10**(-4)
 g = 0
 u :: Potential Double
-u x     = a*x**2 -- harm
+u x     = a*x*x -- harm
 int :: Interval Double
 int     = (-40,40)
 system :: System Double
@@ -88,11 +72,8 @@ psi0 :: Double -> Complex Double
 psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
 dx,dt :: Double
--- dx      = 0.05
--- dt      = 0.5
 dx      = 0.05
-dt      = 1
-
+dt      = 0.5
 
 harmOsz :: IO ()
 harmOsz = do
@@ -112,6 +93,6 @@ plotWaveset set fname = do
             dt   = wsetDt set
             dx   = wsetDx set
             x0   = wsetX0 set
-        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-20,20),YRange (-0.1,1.1)] fname list x0 dt dx
+        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-7,7),YRange (-0.1,1.1)] fname list x0 dt dx
         -- plotManyComplex [XLabel "x/um",YLabel "|psi|^2"] fname list x0 dt dx
 

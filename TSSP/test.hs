@@ -3,6 +3,9 @@ import Plot
 import Data.Complex
 import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
+import File
+import System.Process
+import Text.Printf
 
 main :: IO ()
 main = harmOszSphere
@@ -14,27 +17,31 @@ harmOszSphere = do
         let m       = 7.4 -- 2.6 m_e
             a       = 0.1 :: Double -- µeV µm²
             -- a       = 0 :: Double -- µeV µm²
-            -- g       = 5*10**(-4) :: Double -- µeV µm³
+            g       = 5*10**(-4) :: Double -- µeV µm³
             -- g       = 0 :: Double -- µeV µm³ testng
-            g       = 5*10**(-6) :: Double -- µeV µm³ testing
             u x     = a*x**2 -- harm
             int     = (0,60)
-            system  = System int m u g
+            sys     = System int m u g
 
             sigma   = 1
             mu      = 10
             -- psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
             psi0 x  = 1/sqrt(sqrt pi*sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
-            dx      = 0.05
-            dt      = 0.5
+            dx      = 0.025
+            dt      = 0.25
 
-            waveT   = tsspSphere system psi0 dx dt
+            waveT   = takeTil 40 $ tsspSphere sys psi0 dx dt
             list    = wsetWaves waveT
-            densT   = take 160 $ map ( (*dx) . sum . map ((**2) . magnitude) ) list
+            densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
+
+            title = "harmpot_sphere/data_norm_coupl_dx" ++ printf "%.4f" dx
+                    ++ "_dt" ++ printf "%.3f" dt
         -- putStr $ unlines $ map show list
         -- putStr $ unlines $ map show densT
-        plotWaveset waveT "harmpot_sphere/coupl-6/"
+        _ <- createProcess $ shell $ "mkdir -p output/" ++ title
+        plotWaveset waveT $ title ++ "/"
+        writeWaveset waveT $ "output/" ++ title
         return ()
 
 -- hydrogen :: IO ()
@@ -91,7 +98,7 @@ harmOszSphere = do
 --         -- putStr $ unlines $ map show densT
 --         return ()
 
-plotWaveset :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
+plotWaveset :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a,PrintfArg a)
     => Waveset a -> String -> IO ()
 plotWaveset set fname = do
         let list = wsetWaves set

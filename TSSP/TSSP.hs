@@ -22,6 +22,8 @@ module TSSP
     , tssp
     , tsspSphere
     , renderWave
+    , takeSteps
+    , takeTil
     )
 where
 
@@ -51,7 +53,7 @@ data Waveset a =
       , wsetDx :: a
       , wsetDt :: a
       , wsetX0 :: a
-    }
+    } deriving Show
 
 --------------------------------------------------------------------------------
 --  helper functions
@@ -189,3 +191,10 @@ tsspSphere system wave0 dx dt =
             p0'     = renderWave p0 int dx
             res'    = tssp' system p0' couplSphere dx dt
             waves0' = backtransSphere res'
+
+takeSteps :: Int -> Waveset a -> Waveset a
+takeSteps i (Waveset ws dx dt x0) = Waveset (take i ws) dx dt x0
+
+takeTil :: RealFrac a => a -> Waveset a -> Waveset a
+takeTil a wset = takeSteps i wset
+    where i = ceiling $ a/wsetDt wset + 1

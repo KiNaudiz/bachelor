@@ -59,7 +59,7 @@ data Waveset a =
 --  helper functions
 
 -- effective potential = extern potential + coupling
-effPot :: (RealFloat a) 
+effPot :: (RealFloat a)
     => System a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
 effPot system coupl x phi = sysPotential system x +
     sysCoupling system * coupl x phi
@@ -95,13 +95,13 @@ tssp' system wave0 coupl dx dt =
                                     applyHalfPot x wh dt pot : step wl (x+dx)
                     wave2@(wh2:wl2)     = wh1 : step wl1 1
                         where   step [] _           = undefined
-                                step (wh':[]) _     = [wh']
-                                step (_:wl') l    =
+                                step [wh'] _        = [wh']
+                                step (_:wl') l      =
                                     normalize wave1 len l : step wl' (l+1)
                     wave3  = wh2 : step wl2 1
                         where   step [] _           = undefined
-                                step (wh':[]) _     = [wh']
-                                step (_:wl') j    =
+                                step [wh'] _        = [wh']
+                                step (_:wl') j      =
                                     applyKin wave2 int dt m len j
                                     : step wl' (j+1)
                     wave4               = step wave3 x0
@@ -126,7 +126,7 @@ normalize [] _ _        = undefined
 normalize (_:wl) len l  =
         2/fromIntegral len * summands wl 1
     where   summands  [] _          = undefined
-            summands (_:[]) _       = 0
+            summands [_] _          = 0
             summands (wh':wl') j    =
                 wh'*sin(fromIntegral(l*j)*pi/fromIntegral len) +
                 summands wl' (j+1)
@@ -138,7 +138,7 @@ applyKin [] _ _ _ _ _       = undefined
 applyKin (_:wl) int dt m len j  =
         summands wl 1
     where   summands  [] _          = undefined
-            summands (_:[]) _       = 0
+            summands [_] _               = 0
             summands (wh':wl') l    =
                     exp(-i*dt_c*hbar_c*mu_l2/(2*m_c)) *
                     wh'*sin(pi*fromIntegral(l*j)/fromIntegral len) +

@@ -21,7 +21,7 @@ addPar dx = addPar'
     where   addPar' _ []        = []
             addPar' x (lh:ll)   = (x,lh) : addPar' (x+dx) ll
 
-plotManyComplex :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a,Text.Printf.PrintfArg a)
+plotManyComplex :: (Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a,Text.Printf.PrintfArg a)
     => [Attribute] -> String -> [[Complex a]] -> a -> a -> a -> IO ()
 plotManyComplex a fname l x0 dt dx = p l 0
     where

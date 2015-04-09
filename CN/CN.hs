@@ -74,34 +74,6 @@ renderWave wave0 int@(x0,_) dx =
 waveEntries :: (RealFrac a) => Interval a -> a -> Int
 waveEntries (x0,xe) dx = ceiling $ (xe-x0)/dx + 1
 
-tssp' :: (RealFloat a)
-    => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
-tssp' system wave0 coupl dx dt =
-        Waveset waves dx dt x0
-    where
-        waves       = iterate timestep wave0
-        i           = 0:+1
-        hbar_c      = hbar :+ 0
-        m_c         = sysMass system :+ 0
-        dx_c        = dx :+ 0
-        dt_c        = dt :+ 0
-        int@(x0,_)  = sysInterval system
-        pot         = potentialMtx system dx
-        n           = waveEntries int dx
-        dmtx        = diffMtx n
-        mmtx        = idMx n  + ((1/12) .** dmtx)
-        timestep w' = solve lmx b
-            where   b       = (mmtx -* w') - (lmx' -* w')
-                    lmx'    = (i*dt_c/2)
-                            .** (mmtx `mul` pot' - ((hbar_c**2/(2*dx_c**2*m_c)) .** dmtx))
-                    lmx     = mmtx + lmx'
-                    pot'    = pot + couplingMtx system coupl w' dx
-
-effPot :: (RealFloat a)
-    => System a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
-effPot system coupl x phi = sysPotential system x
-    + sysCoupling system * coupl x phi
-
 -- tssp' :: (RealFloat a)
 --     => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
 -- tssp' system wave0 coupl dx dt =
@@ -114,22 +86,50 @@ effPot system coupl x phi = sysPotential system x
 --         dx_c        = dx :+ 0
 --         dt_c        = dt :+ 0
 --         int@(x0,_)  = sysInterval system
+--         pot         = potentialMtx system dx
 --         n           = waveEntries int dx
 --         dmtx        = diffMtx n
---         mmtx        = idMx n + ((1/12) .** dmtx)
---         timestep    = applHPot . applKin . applHPot
---         -- timestep    = applKin
---         applHPot w' = bandList w
---             where   wl          = fillVec w'
---                     w           = step wl x0
---                     step [] _           = []
---                     step (wh:wr) x      = applyHalfPot x wh dt pot : step wr (x+dx)
---         pot         = effPot system coupl
---         -- pot x _     = x**2
---         applKin w'  = solve lmx b
---             where   b       = (mmtx -* w') + (lmx' -* w')
---                     lmx'    = (i*dt_c*hbar_c/(4*m_c*dx_c**2)) .** dmtx
---                     lmx     = mmtx - lmx'
+--         mmtx        = idMx n  + ((1/12) .** dmtx)
+--         timestep w' = solve lmx b
+--             where   b       = (mmtx -* w') - (lmx' -* w')
+--                     lmx'    = (i*dt_c/2)
+--                             .** (mmtx `mul` pot' - ((hbar_c**2/(2*dx_c**2*m_c)) .** dmtx))
+--                     lmx     = mmtx + lmx'
+--                     pot'    = pot + couplingMtx system coupl w' dx
+
+effPot :: (RealFloat a)
+    => System a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
+effPot system coupl x phi = sysPotential system x
+    + sysCoupling system * coupl x phi
+
+tssp' :: (RealFloat a)
+    => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
+tssp' system wave0 coupl dx dt =
+        Waveset waves dx dt x0
+    where
+        waves       = iterate timestep wave0
+        i           = 0:+1
+        hbar_c      = hbar :+ 0
+        m_c         = sysMass system :+ 0
+        dx_c        = dx :+ 0
+        dt_c        = dt :+ 0
+        int@(x0,_)  = sysInterval system
+        n           = waveEntries int dx
+        dmtx        = diffMtx n
+        mmtx        = idMx n + ((1/12) .** dmtx)
+        timestep    = applHPot . applKin . applHPot
+        -- timestep    = applKin
+        applHPot w' = bandList w
+            where   wl          = fillVec w'
+                    w           = step wl x0
+                    step [] _           = []
+                    step (wh:wr) x      = applyHalfPot x wh dt pot : step wr (x+dx)
+        pot         = effPot system coupl
+        -- pot x _     = x**2
+        applKin w'  = solve lmx b
+            where   b       = (mmtx -* w') + (lmx' -* w')
+                    lmx'    = (i*dt_c*hbar_c/(4*m_c*dx_c**2)) .** dmtx
+                    lmx     = mmtx - lmx'
 
 applyHalfPot :: RealFloat a
     => a -> Wavepoint a -> a -> (a -> Wavepoint a -> a) -> Wavepoint a
@@ -154,10 +154,10 @@ backtransSphere wset =
             waves   = wsetWaves wset
             x0      = wsetX0 wset
             dx      = wsetDx wset
-            waves'  = map (bandList . (`trans` x0) . fillVec) waves
-            trans [] _      = []
-            trans (_:wl) 0  = 0 : trans wl dx
-            trans (wh:wl) x = wh/(x:+0) : trans wl (x+dx)
+            waves'  = map (bandList . (`trans'` x0) . fillVec) waves
+            trans' [] _         = []
+            trans' (_:wl) 0     = 0 : trans' wl dx
+            trans' (wh:wl) x    = wh/(x:+0) : trans' wl (x+dx)
 
 tsspSphere :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
 tsspSphere system wave0 dx dt =
@@ -174,3 +174,17 @@ takeSteps i (Waveset ws dx dt x0) = Waveset (take i ws) dx dt x0
 takeTil :: RealFrac a => a -> Waveset a -> Waveset a
 takeTil a wset = takeSteps i wset
     where i = ceiling $ a/wsetDt wset + 1
+
+energy :: (RealFloat a) => System a -> a -> Wave a -> a
+energy sys dx wave = e
+    where   pot             = effPot sys couplKarth
+            (x0,_)          = sysInterval sys
+            m               = sysMass sys
+            n               = vecLength wave
+            kin             = hbar**2/(2*m)
+                            * magnitude (sum $ fillVec $ diffMtx n -* wave)
+            pot' [] _       = 0
+            pot' (lh:ll) x  = pot x lh + pot' ll (x+dx)
+            e               = pot' (fillVec wave) x0 + kin
+
+

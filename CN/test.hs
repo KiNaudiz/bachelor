@@ -12,55 +12,31 @@ import System.Process
 main :: IO ()
 -- main = harmOszSphere
 -- main = hydrogen
-main = harmOsz
-
-harmOszSphere :: IO ()
-harmOszSphere = do
-        let int'    = (0.0000001,40)
-            sys'    = sys { sysInterval = int' }
-            waveT   = tsspSphere sys' psi0 dx dt
-            list    = map fillVec $ wsetWaves waveT
-            densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
-        -- putStr $ unlines $ map show list
-        -- putStr $ unlines $ map show densT
-        plotWaveset waveT "harmpot_sphere/"
+main = do
+        -- _ <- harmOszSphere
+        _ <- harmOsz
         return ()
 
--- hydrogen :: IO ()
--- hydrogen = do
---         let m       = 1/0.351764 -- 2.6 m_e
---             g       = 5*10**(-4) :: Double -- µeV µm³
---             e0      = 2.8372*10**(-24) :: Double
---             e       = 1.6022*10**(-10) :: Double
---             u x     = e/(4*pi*e0 * x**2)
---             int     = (0,10**(-4))
---             system  = System int m u g
---
---             -- sigma   = 10
---             -- mu      = 100
---             -- psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
---             a0      = 5.29*10**(-5)
---             -- psi0 x  = 1/sqrt(sqrt pi*sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
---             psi0 x  = sqrt(1/(pi*a0**3)) * exp(-x/a0) :+ 0 -- 1 0 0
---             -- psi0 x  = sqrt(2/a0) * exp(-x/a0) :+ 0 -- 2 0 0
---
---             dx      = 10**(-7)
---             dt      = 0.001
---
---             waveT   = tsspSphere system psi0 dx dt
---             list    = wsetWaves waveT
---             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
---         -- putStr $ unlines $ map show list
---         -- putStr $ unlines $ map show densT
---         plotWaveset waveT "hydrogen/"
---         return ()
+harmOszSphere :: IO (Waveset Double)
+harmOszSphere = do
+        let int'    = (0.0,10)
+            sys'    = sys { sysInterval = int' }
+            waveT   = takeTil 40 $ tssp sys' psi0 dx dt
+            title = "harmpot_sphere/data_norm_coupl_split_dx" ++ printf "%.4f" dx
+                    ++ "_dt" ++ printf "%.3f" dt
+        _ <- createProcess $ shell $ "mkdir -p output/" ++ title
+        plotWaveset waveT (0,5) (-0.1,1.1) $ title ++ "/"
+        writeWaveset waveT $ "output/" ++ title ++ ".dat"
+        _ <- plotWaveset waveT (0,5) (-0.1,1.1) $ title ++ "/"
+        _ <- plotDensity waveT $ title ++ "/"
+        return waveT
 
 m,a,g :: Double
 m       = 7.4 -- 2.6 m_e
 a       = 0.1
 -- a = 0 :: Double
--- g       = 5*10**(-4)
-g = 0
+g       = 5*10**(-4)
+-- g = 0
 u :: Potential Double
 u x     = a*x*x -- harm
 int :: Interval Double
@@ -78,23 +54,52 @@ dx,dt :: Double
 dx      = 0.05
 dt      = 0.5
 
-harmOsz :: IO ()
+harmOsz :: IO (Waveset Double)
 harmOsz = do
         let
             waveT   = takeTil 40 $ tssp sys psi0 dx dt
-            title = "harmpot/data_norm_coupl_dx" ++ printf "%.4f" dx
+            title = "harmpot/data_norm_coupl_split_dx" ++ printf "%.4f" dx
                     ++ "_dt" ++ printf "%.3f" dt
         _ <- createProcess $ shell $ "mkdir -p output/" ++ title
-        plotWaveset waveT $ title ++ "/"
+        plotWaveset waveT (-5,5) (-0.1,1.1) $ title ++ "/"
         writeWaveset waveT $ "output/" ++ title ++ ".dat"
-        return ()
+        _ <- plotEnergy sys waveT $ title ++ "/"
+        _ <- plotDensity waveT $ title ++ "/"
+        return waveT
 
 plotWaveset :: (PrintfArg a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
-    => Waveset a -> String -> IO ()
-plotWaveset set fname = do
+    => Waveset a -> Interval Double -> Interval Double -> String -> IO ()
+plotWaveset set xr yr fname = do
         let list = map fillVec $ wsetWaves set
-            dt   = wsetDt set
-            dx   = wsetDx set
+            dt'  = wsetDt set
+            dx'  = wsetDx set
             x0   = wsetX0 set
-        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-7,7),YRange (-0.1,1.1)] fname list x0 dt dx
+            dens = densityList set
+        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange xr,YRange yr] fname list x0 dt' dx'
         -- plotManyComplex [XLabel "x/um",YLabel "|psi|^2"] fname list x0 dt dx
+
+plotDensity :: (PrintfArg a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
+    => Waveset a -> String -> IO [(a,a)]
+plotDensity set fname = do
+        let dens = densityList set
+        plotList [Key Nothing,PNG ("output/" ++ fname ++ "density.png")
+                 ,XLabel "t/ns",YLabel "|psi|^2",Title "|psi(t)|^2"] dens
+        return dens
+
+plotEnergy :: (PrintfArg a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a)
+    => System a -> Waveset a -> String -> IO [(a,a)]
+plotEnergy sys' wset fname = do
+        let en   = energyList sys' wset
+        plotList [Key Nothing,PNG ("output/" ++ fname ++ "energy.png")
+                 ,XLabel "t/ns",YLabel "E=T+U",Title "E(t) 1-dim"] en
+        return en
+
+energyList :: (RealFloat a)
+    => System a -> Waveset a -> [(a,a)]
+energyList sys' wset = addPar (wsetDt wset) 0 $
+        map (energy sys' (wsetDx wset)) $ wsetWaves wset
+
+densityList :: RealFloat a => Waveset a -> [(a,a)]
+densityList wset = addPar (wsetDt wset) 0
+        $ map ( (* wsetDx wset) . sum . map ( (**2) . magnitude) . fillVec )
+        $ wsetWaves wset

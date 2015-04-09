@@ -17,15 +17,14 @@ harmOszSphere = do
         let m       = 7.43 -- 2.6 m_e
             a       = 0.1 :: Double -- µeV µm²
             -- a       = 0 :: Double -- µeV µm²
-            -- g       = 5*10**(-4) :: Double -- µeV µm³
+            g       = 5*10**(-4) :: Double -- µeV µm³
             -- g       = 0 :: Double -- µeV µm³ testng
-            g       = 5*10**(-4)/(4*pi) :: Double -- µeV µm³
             u x     = a*x**2 -- harm
-            int     = (0,60)
+            int     = (0,10)
             sys     = System int m u g
 
-            sigma   = 1
-            mu      = 10
+            sigma   = 0.5
+            mu      = 2
             -- psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
             psi0 x  = 1/sqrt(sqrt pi*sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
@@ -35,7 +34,7 @@ harmOszSphere = do
             waveT   = takeTil 40 $ tsspSphere sys psi0 dx dt
 
             title = "harmpot_sphere/data_norm_coupl_dx" ++ printf "%.4f" dx
-                    ++ "_dt" ++ printf "%.3f" dt ++ "g4pi"
+                    ++ "_dt" ++ printf "%.3f" dt
         -- putStr $ unlines $ map show list
         -- putStr $ unlines $ map show densT
         _ <- createProcess $ shell $ "mkdir -p output/" ++ title
@@ -104,7 +103,7 @@ plotWaveset set fname = do
             dt   = wsetDt set
             dx   = wsetDx set
             x0   = wsetX0 set
-        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-0,20),YRange (-0.1,2.1)] fname list x0 dt dx
+        plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-0,5),YRange (-0.1,2.1)] fname list x0 dt dx
         -- plotManyComplex [XLabel "x/um",YLabel "|psi|^2"] fname list x0 dt dx
 
 

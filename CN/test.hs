@@ -5,6 +5,9 @@ import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
 import Vector
 import Tridiag
+import Text.Printf
+import File
+import System.Process
 
 main :: IO ()
 -- main = harmOszSphere
@@ -14,8 +17,8 @@ main = harmOsz
 harmOszSphere :: IO ()
 harmOszSphere = do
         let int'    = (0.0000001,40)
-            system' = system { sysInterval = int' }
-            waveT   = tsspSphere system' psi0 dx dt
+            sys'    = sys { sysInterval = int' }
+            waveT   = tsspSphere sys' psi0 dx dt
             list    = map fillVec $ wsetWaves waveT
             densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
         -- putStr $ unlines $ map show list
@@ -61,13 +64,13 @@ g = 0
 u :: Potential Double
 u x     = a*x*x -- harm
 int :: Interval Double
-int     = (-40,40)
-system :: System Double
-system  = System int m u g
+int     = (-10,10)
+sys :: System Double
+sys     = System int m u g
 
 sigma,mu :: Double
 sigma   = 0.5
-mu      = 5
+mu      = 2
 psi0 :: Double -> Complex Double
 psi0 x  = 1/sqrt(2*pi*sigma**2) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
@@ -78,15 +81,15 @@ dt      = 0.5
 harmOsz :: IO ()
 harmOsz = do
         let
-            waveT   = tssp system psi0 dx dt
-            list    = map fillVec $ wsetWaves waveT
-            densT   = map ( (*dx) . sum . map ((**2) . magnitude) ) list
-        -- putStr $ unlines $ map show list
-        plotWaveset waveT "harmpot/"
-        -- putStr $ unlines $ map show densT
+            waveT   = takeTil 40 $ tssp sys psi0 dx dt
+            title = "harmpot/data_norm_coupl_dx" ++ printf "%.4f" dx
+                    ++ "_dt" ++ printf "%.3f" dt
+        _ <- createProcess $ shell $ "mkdir -p output/" ++ title
+        plotWaveset waveT $ title ++ "/"
+        writeWaveset waveT $ "output/" ++ title ++ ".dat"
         return ()
 
-plotWaveset :: (Show a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
+plotWaveset :: (PrintfArg a,Graphics.Gnuplot.Value.Tuple.C a, RealFloat a, Num a)
     => Waveset a -> String -> IO ()
 plotWaveset set fname = do
         let list = map fillVec $ wsetWaves set
@@ -95,4 +98,3 @@ plotWaveset set fname = do
             x0   = wsetX0 set
         plotManyComplex [XLabel "x/um",YLabel "|psi|^2",XRange (-7,7),YRange (-0.1,1.1)] fname list x0 dt dx
         -- plotManyComplex [XLabel "x/um",YLabel "|psi|^2"] fname list x0 dt dx
-

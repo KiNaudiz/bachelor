@@ -22,7 +22,7 @@ harmOszSphere = do
         let int'    = (0.0,10)
             sys'    = sys { sysInterval = int' }
             waveT   = takeTil 40 $ tssp sys' psi0 dx dt
-            title = "harmpot_sphere/data_norm_coupl_5_split_mu"
+            title = "harmpot_sphere/data_norm_coupl_pred_5_split_mu"
                     ++ printf "%3.1f" mu ++ "_dx" ++ printf "%.4f" dx
                     ++ "_dt" ++ printf "%.3f" dt
         _ <- createProcess $ shell $ "mkdir -p output/" ++ title

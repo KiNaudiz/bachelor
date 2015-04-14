@@ -159,7 +159,8 @@ backtransSphere wset =
             trans' (_:wl) 0     = 0 : trans' wl dx
             trans' (wh:wl) x    = wh/(x:+0) : trans' wl (x+dx)
 
-tsspSphere :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
+tsspSphere :: (RealFloat a)
+    => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
 tsspSphere system wave0 dx dt =
         waves0'
     where   int     = sysInterval system
@@ -176,7 +177,7 @@ takeTil a wset = takeSteps i wset
     where i = ceiling $ a/wsetDt wset + 1
 
 energy :: (RealFloat a) => System a -> a -> Wave a -> a
-energy sys dx wave = e
+energy sys dx wave = e * dx
     where   pot             = effPot sys couplKarth
             (x0,_)          = sysInterval sys
             m               = sysMass sys
@@ -187,4 +188,26 @@ energy sys dx wave = e
             pot' (lh:ll) x  = pot x lh + pot' ll (x+dx)
             e               = pot' (fillVec wave) x0 + kin
 
+energySphere :: (RealFloat a) => System a -> a -> Wave a -> a
+energySphere sys dx wave = 4*pi*e*dx
+    where   pot             = effPot sys couplKarth
+            (x0,_)          = sysInterval sys
+            m               = sysMass sys
+            n               = vecLength wave
+            kin             = map ((*(hbar**2/(2*m))) . magnitude)
+                                (fillVec $ diffMtx n -* wave)
+            pot' [] _       = []
+            pot' (lh:ll) x  = pot x lh : pot' ll (x+dx)
+            kinpot          = Prelude.zipWith (+) (pot' (fillVec wave) x0) kin
+            tmsx _ []       = 0
+            tmsx x (lh:ll)  = x**2 * lh + tmsx (x+dx) ll
+            e               = tmsx x0 kinpot
 
+density :: (RealFloat a) => a -> Wave a -> a
+density dx = (*dx) . sum . map ((**2) . magnitude) . fillVec
+
+densitySphere :: (RealFloat a) => a -> a -> Wave a -> a
+densitySphere x0 dx =
+        (*dx) . tmsx x0 . map ((**2) . magnitude) . fillVec
+    where   tmsx _ []       = 0
+            tmsx x (lh:ll)  = x**2 * lh + tmsx (x+dx) ll

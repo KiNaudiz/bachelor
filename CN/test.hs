@@ -19,18 +19,19 @@ main = do
 
 harmOszSphere :: IO (Waveset Double)
 harmOszSphere = do
-        let int'    = (dx,10)
+        let int'    = (dx,mu*pnum*5)
             sys'    = sys { sysInterval = int' }
             waveT   = takeTil 40 $ tsspSphere sys' psi0 dx dt
             psi0Norm    = densitySphere dx dx
                         $ renderWave psi0Form int' dx
-            psi0    = (*((pnum/psi0Norm) :+0)) . psi0Form
+            psi0    = (*(sqrt (pnum/psi0Norm) :+0)) . psi0Form
             title = "harmpot_sphere/data_pred_split_mu"
-                    ++ printf "%3.1f" mu ++ "_g" ++ printf "%.7f" g 
+                    ++ printf "%3.1f" mu ++ "_g" ++ printf "%.7f" g
+                    ++ "_pnum" ++ printf "%f" pnum
                     ++ "_dx" ++ printf "%.4f" dx
                     ++ "_dt" ++ printf "%.3f" dt
         _ <- createProcess $ shell $ "mkdir -p output/" ++ title
-        plotWaveset waveT (0,3) (-5.1,10.1) $ title ++ "/"
+        plotWaveset waveT (0,4) (-2,pnum) $ title ++ "/"
         writeWaveset waveT $ "output/" ++ title ++ ".dat"
         _ <- plotEnergySphere sys' waveT $ title ++ "/"
         _ <- plotDensitySphere waveT $ title ++ "/"
@@ -50,18 +51,18 @@ sys :: System Double
 sys     = System int m u g
 
 sigma,mu :: Double
-sigma   = 0.1
-mu      = 2
+sigma   = 0.2
+mu      = 2.0
 
 pnum :: Double
-pnum    = 15
+pnum    = 10
 
 psi0Form :: Double -> Complex Double
-psi0Form x  = exp(-(x-mu)**2/(2*sigma**2)) :+ 0
+psi0Form x  = (1/sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
 dx,dt :: Double
-dx      = 0.01
-dt      = 0.1
+dx      = 0.05
+dt      = 0.5
 
 harmOsz :: IO (Waveset Double)
 harmOsz = do

@@ -76,9 +76,9 @@ renderWave wave0 int@(x0,_) dx =
 waveEntries :: (RealFrac a) => Interval a -> a -> Int
 waveEntries (x0,xe) dx = ceiling $ (xe-x0)/dx + 1
 
--- tssp' :: (RealFloat a)
+-- cn' :: (RealFloat a)
 --     => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
--- tssp' system wave0 coupl dx dt =
+-- cn' system wave0 coupl dx dt =
 --         Waveset waves dx dt x0
 --     where
 --         waves       = iterate timestep wave0
@@ -105,9 +105,9 @@ effPot system coupl x phi = sysPotential system x
     + sysCoupling system * coupl x phi
 
 -- with predictor
-tssp' :: (RealFloat a)
+cn' :: (RealFloat a)
     => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
-tssp' system wave0 coupl dx dt =
+cn' system wave0 coupl dx dt =
         Waveset waves dx dt x0
     where
         waves           = iterate timestep wave0
@@ -157,9 +157,9 @@ applyHalfPot x phi dt pot =
             hbar_c  = hbar :+ 0
             dt_c    = dt :+ 0
 
-tssp :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
-tssp system wave0 dx dt =
-        tssp' system wave0' couplKarth dx dt
+cn :: (RealFloat a) => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
+cn system wave0 dx dt =
+        cn' system wave0' couplKarth dx dt
     where   int     = sysInterval system
             wave0'  = renderWave wave0 int dx
 
@@ -176,14 +176,14 @@ backtransSphere wset =
             trans' (_:wl) 0     = 0 : trans' wl dx
             trans' (wh:wl) x    = wh/(x:+0) : trans' wl (x+dx)
 
-tsspSphere :: (RealFloat a)
+cnSphere :: (RealFloat a)
     => System a -> (a -> Wavepoint a) -> a -> a -> Waveset a
-tsspSphere system wave0 dx dt =
+cnSphere system wave0 dx dt =
         waves0'
     where   int     = sysInterval system
             p0 x    = wave0 x * (x:+0)
             p0'     = renderWave p0 int dx
-            res'    = tssp' system p0' couplSphere dx dt
+            res'    = cn' system p0' couplSphere dx dt
             waves0' = backtransSphere res'
 
 takeSteps :: Int -> Waveset a -> Waveset a

@@ -21,7 +21,7 @@ harmOszSphere :: IO (Waveset Double)
 harmOszSphere = do
         let int'    = (dx,mu*pnum*5)
             sys'    = sys { sysInterval = int' }
-            waveT   = takeTil 40 $ tsspSphere sys' psi0 dx dt
+            waveT   = takeTil 40 $ cnSphere sys' psi0 dx dt
             psi0Norm    = densitySphere dx dx
                         $ renderWave psi0Form int' dx
             psi0    = (*(sqrt (pnum/psi0Norm) :+0)) . psi0Form
@@ -31,7 +31,7 @@ harmOszSphere = do
                     ++ "_dx" ++ printf "%.4f" dx
                     ++ "_dt" ++ printf "%.3f" dt
         _ <- createProcess $ shell $ "mkdir -p output/" ++ title
-        plotWaveset waveT (0,4) (-2,pnum) $ title ++ "/"
+        plotWaveset waveT (0,8) (-2,pnum) $ title ++ "/"
         writeWaveset waveT $ "output/" ++ title ++ ".dat"
         _ <- plotEnergySphere sys' waveT $ title ++ "/"
         _ <- plotDensitySphere waveT $ title ++ "/"
@@ -52,7 +52,7 @@ sys     = System int m u g
 
 sigma,mu :: Double
 sigma   = 0.2
-mu      = 2.0
+mu      = 5.0
 
 pnum :: Double
 pnum    = 10
@@ -62,7 +62,7 @@ psi0Form x  = (1/sigma) * exp(-(x-mu)**2/(2*sigma**2)) :+ 0
 
 dx,dt :: Double
 dx      = 0.05
-dt      = 0.5
+dt      = 0.1
 
 harmOsz :: IO (Waveset Double)
 harmOsz = do
@@ -70,7 +70,7 @@ harmOsz = do
             psi0Norm    = density dx
                         $ renderWave psi0Form int dx
             psi0    = (* ((pnum/psi0Norm) :+0)) . psi0Form
-            waveT   = takeTil 40 $ tssp sys psi0 dx dt
+            waveT   = takeTil 40 $ cn sys psi0 dx dt
             title = "harmpot/data_norm_coupl_split_dx" ++ printf "%.4f" dx
                     ++ "_dt" ++ printf "%.3f" dt
         _ <- createProcess $ shell $ "mkdir -p output/" ++ title

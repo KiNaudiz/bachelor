@@ -9,7 +9,7 @@ import Data.List as L
 
 import Vector
 
-type BMx a  = BVec (BVec a)
+type BMx a  = Vec (Vec a)
 
 data BandMatrix a = BM
     { mx :: BMx a } deriving Eq
@@ -33,7 +33,7 @@ instance (Eq a, Num a) => Num (BandMatrix a) where
 instance (Show a, Num a, Eq a) => Show (BandMatrix a) where
     show = unlines . map show . fillMx
 
-height, width, dim, ubk, obk :: BandMatrix a -> BKey
+height, width, dim, ubk, obk :: BandMatrix a -> VKey
 height m = length $ elems $ mx m A.! 0
 width    = height
 dim      = height
@@ -61,7 +61,7 @@ idMx n = BM $ listArray (0,0) [listArray (1,n) $ repeat 1]
 
 -- TODO: partitionMx, separateMx
 
-(#) :: Num a => BandMatrix a -> (BKey,BKey) -> a
+(#) :: Num a => BandMatrix a -> (VKey,VKey) -> a
 m # (r,c)
     | dia > err = error "Out of bound"
     | dia > ul = 0
@@ -73,15 +73,15 @@ m # (r,c)
             ll  = minimum $ indices $ mx m
             err = length (elems $ mx m A.! 0) - 1
 
-diag :: BandMatrix a -> BKey -> BandVector a
-diag m i = BV $ mx m A.! i
+diag :: BandMatrix a -> VKey -> Vector a
+diag m i = VV $ mx m A.! i
 
-row :: Num a => BandMatrix a -> BKey -> BandVector a
-row m i = bandList $ map (\j -> m # (i,j)) [1..n]
+row :: Num a => BandMatrix a -> VKey -> Vector a
+row m i = vecList $ map (\j -> m # (i,j)) [1..n]
     where   n = dim m
 
-col :: Num a => BandMatrix a -> BKey -> BandVector a
-col m j = bandList $ map (\i -> m # (i,j)) [1..n]
+col :: Num a => BandMatrix a -> VKey -> Vector a
+col m j = vecList $ map (\i -> m # (i,j)) [1..n]
     where   n = dim m
 
 -- TODO: update, erase
@@ -92,10 +92,10 @@ diagonalMx :: (Num a, Eq a) => [a] -> BandMatrix a
 diagonalMx l = BM $ listArray (0,0) [listArray (1,n) l]
     where n = L.length l
 
-mainDiag :: BandMatrix a -> BandVector a
+mainDiag :: BandMatrix a -> Vector a
 mainDiag m = diag m 0
 
-fromDiags :: Num a => BVec(BandVector a) -> BandMatrix a
+fromDiags :: Num a => Vec(Vector a) -> BandMatrix a
 fromDiags vl = BM $ listArray (ubk',obk') m
     where   n'      = vecLength $ vl A.! 0
             n''     = ubk'+obk'+1
@@ -109,7 +109,7 @@ fromDiags vl = BM $ listArray (ubk',obk') m
                 | otherwise = []
             m       = trunc' (elems vl) ubk'
 
-fromBand :: Num a => BKey -> (BKey,BKey) -> [a] -> BandMatrix a
+fromBand :: Num a => VKey -> (VKey,VKey) -> [a] -> BandMatrix a
 fromBand n (ubk'',obk') l = BM $ listArray (ubk',obk') m
     where   buildDiag i x   = listArray (1,j) $ replicate j x
                 where j = n - abs i
@@ -127,10 +127,10 @@ fillMx m = map (fillVec . row m) [1..n]
 -- TODO: trans
 -- TODO: mulVM
 
-mulMV :: Num a => BandMatrix a -> BandVector a -> BandVector a
+mulMV :: Num a => BandMatrix a -> Vector a -> Vector a
 m `mulMV` v
     | dim m /= vecLength v = error "dimension error"
-    | otherwise = bandList l
+    | otherwise = vecList l
     where   entry' i    = sum $ L.zipWith (*) ms vs
                 where   ms  = map (\j -> m # (i,j)) [a..b]
                         vs  = map (\j -> v Vector.! j) [a..b]

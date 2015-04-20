@@ -7,21 +7,21 @@ import Data.Array.Base as A ((!))
 import Data.Foldable as F
 import Data.List as L
 
-type BKey    = Int
-type BVec a = Array BKey a
+type VKey    = Int
+type Vec a = Array VKey a
 
-data BandVector a = BV
-    { vec :: BVec a } deriving Eq
+data Vector a = VV
+    { vec :: Vec a } deriving Eq
 
     -- TODO: Eq
 
-instance Functor BandVector where
+instance Functor Vector where
     fmap f v    = v { vec = amap f (vec v) }
 
-instance Foldable BandVector where
+instance Foldable Vector where
     foldr f d v = F.foldr f d (vec v)
 
-instance (Eq a, Num a) => Num (BandVector a) where
+instance (Eq a, Num a) => Num (Vector a) where
     (+)           = Vector.zipWith (+)
     -- (*)           = Vector.zipWith (*)
     (*)           = undefined
@@ -32,71 +32,71 @@ instance (Eq a, Num a) => Num (BandVector a) where
     abs           = fmap abs
     signum        = fmap signum
 
-instance (Show a, Eq a) => Show (BandVector a) where
+instance (Show a, Eq a) => Show (Vector a) where
     show = show . fillVec
 
-vecLength :: BandVector a -> BKey
+vecLength :: Vector a -> VKey
 vecLength v = u - l + 1
     where   idx = indices $ vec v
             u   = L.maximum idx
             l   = L.minimum idx
 
-setLength :: (Num a) => BKey -> BandVector a -> BandVector a
+setLength :: (Num a) => VKey -> Vector a -> Vector a
 setLength n v = v { vec = newvec }
     where   newvec  = listArray (1,n) arr
             arr     = elems (vec v) ++ repeat 0
 
-emptyVec :: BandVector a
-emptyVec = BV $ array (1,0) []
+emptyVec :: Vector a
+emptyVec = VV $ array (1,0) []
 
-zeroVec :: Num a => BKey -> BandVector a
-zeroVec n = BV $ listArray (1,n) $ repeat 0
+zeroVec :: Num a => VKey -> Vector a
+zeroVec n = VV $ listArray (1,n) $ repeat 0
 
-isZeroVec, isNotZeroVec :: (Eq a,Num a) => BandVector a -> Bool
+isZeroVec, isNotZeroVec :: (Eq a,Num a) => Vector a -> Bool
 isZeroVec = L.all (==0) . elems . vec
 isNotZeroVec = not . isZeroVec
 
-singVec :: (Eq a, Num a) => a -> BandVector a
-singVec x = BV $ listArray (1,1) [x]
+singVec :: (Eq a, Num a) => a -> Vector a
+singVec x = VV $ listArray (1,1) [x]
 
 -- TODO: partitionVec
 
-(!) :: BandVector a -> BKey -> a
+(!) :: Vector a -> VKey -> a
 v ! i = (A.!) (vec v) i
 
 -- TODO: eraseInVec, vecIns
 
-zipWith :: (a -> a -> a) -> BandVector a -> BandVector a -> BandVector a
-zipWith f vv@(BV v) wv@(BV w)
+zipWith :: (a -> a -> a) -> Vector a -> Vector a -> Vector a
+zipWith f vv@(VV v) wv@(VV w)
     | vecLength wv /= n = error "zipWith: dimension error"
-    | otherwise = BV $ listArray (1,n) arr
+    | otherwise = VV $ listArray (1,n) arr
     where   n   = vecLength vv
             va  = elems v
             wa  = elems w
             arr = L.zipWith f va wa
 
-fillVec :: BandVector a -> [a]
+fillVec :: Vector a -> [a]
 fillVec = elems . vec
 
-bandList :: [a] -> BandVector a
-bandList l = BV $ listArray (1,n) l
+vecList :: [a] -> Vector a
+vecList l = VV $ listArray (1,n) l
     where   n = length l
 
-dot :: Num a => BandVector a -> BandVector a -> a
+dot :: Num a => Vector a -> Vector a -> a
 v `dot` w   = L.sum $ elems $ vec $ Vector.zipWith (*) v w
 
-(·) :: Num a => BandVector a -> BandVector a -> a
+(·) :: Num a => Vector a -> Vector a -> a
 (·) = dot
 
-mulSV :: Num a => a -> BandVector a -> BandVector a
+mulSV :: Num a => a -> Vector a -> Vector a
 mulSV s = fmap (*s)
 
-(.*) :: Num a => a -> BandVector a -> BandVector a
+(.*) :: Num a => a -> Vector a -> Vector a
 (.*) = mulSV
 
-mulVS :: Num a => BandVector a -> a -> BandVector a
+mulVS :: Num a => Vector a -> a -> Vector a
 v `mulVS` s = s `mulSV` v
 
-(*.) :: Num a => BandVector a -> a -> BandVector a
+(*.) :: Num a => Vector a -> a -> Vector a
 (*.) = mulVS
 

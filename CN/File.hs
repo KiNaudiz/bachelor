@@ -19,5 +19,5 @@ readWaveset filename = do
         let [dx',dt',x0',ws']   = lines str
             [dx,dt,x0]  = map read [dx',dt',x0']-- :: [a]
             ws          = read ws'-- :: [[a]]
-        return $ Waveset (map bandList ws) dx dt x0
+        return $ Waveset (map vecList ws) dx dt x0
 

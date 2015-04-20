@@ -8,7 +8,7 @@ import Vector
 type Interval a = (a,a)
 type Potential a = ( a -> a )
 type Wavepoint a = Complex a
-type Wave a = BandVector (Wavepoint a)
+type Wave a = Vector (Wavepoint a)
 
 type Operator a = TridiagMatrix (Complex a)
 
@@ -64,12 +64,12 @@ couplSphere r phi
     | r == 0    = error "couplSphere: singularity"
     | otherwise = magnitude phi ** 2 / r**2
 
-diffMtx :: RealFloat a => BKey -> Operator a
+diffMtx :: RealFloat a => VKey -> Operator a
 diffMtx n = fromBand n (1,-2,1)
 
 renderWave :: (RealFloat a) => (a -> Wavepoint a) -> Interval a -> a -> Wave a
 renderWave wave0 int@(x0,_) dx =
-        bandList $ map wave0 xs
+        vecList $ map wave0 xs
     where   n   = waveEntries int dx
             xs  = [x0 + fromIntegral m*dx | m <- [0..n-1]]
 
@@ -133,7 +133,7 @@ cn' system wave0 coupl dx dt =
         -- -- no predictor
         -- timestep  w     = timestep' w w
 
-        applHPot p' w'  = bandList (Prelude.zipWith (*) potl wl)
+        applHPot p' w'  = vecList (Prelude.zipWith (*) potl wl)
             where   wl          = fillVec w'
                     pl          = fillVec p'
                     potl        = step pl x0
@@ -171,7 +171,7 @@ backtransSphere wset =
             waves   = wsetWaves wset
             x0      = wsetX0 wset
             dx      = wsetDx wset
-            waves'  = map (bandList . (`trans'` x0) . fillVec) waves
+            waves'  = map (vecList . (`trans'` x0) . fillVec) waves
             trans' [] _         = []
             trans' (_:wl) 0     = 0 : trans' wl dx
             trans' (wh:wl) x    = wh/(x:+0) : trans' wl (x+dx)

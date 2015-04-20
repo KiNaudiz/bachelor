@@ -7,13 +7,11 @@ import Data.Array.Base as A ((!))
 import Data.Foldable as F
 import Data.List as L
 
-type VKey    = Int
-type Vec a = Array VKey a
+type VKey   = Int
+type Vec a  = Array VKey a
 
 data Vector a = VV
     { vec :: Vec a } deriving Eq
-
-    -- TODO: Eq
 
 instance Functor Vector where
     fmap f v    = v { vec = amap f (vec v) }

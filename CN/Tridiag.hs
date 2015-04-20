@@ -9,7 +9,7 @@ import Data.List as L
 
 import Vector
 
-type TDMx a  = (BVec a,BVec a,BVec a)
+type TDMx a  = (Vec a,Vec a,Vec a)
 
 mapTDMx :: (a -> b) -> (a,a,a) -> (b,b,b)
 mapTDMx f (a,b,c) = (f a,f b,f c)
@@ -42,7 +42,7 @@ instance (Eq a, Num a) => Num (TridiagMatrix a) where
 instance (Show a, Num a, Eq a) => Show (TridiagMatrix a) where
     show = unlines . map show . fillMx
 
-height, width, dim, ubk, obk :: TridiagMatrix a -> BKey
+height, width, dim, ubk, obk :: TridiagMatrix a -> VKey
 height      = vecLength . (-!- 0)
 width       = height
 dim         = height
@@ -70,7 +70,7 @@ idMx n = fromBand n (0,1,0)
 
 -- TODO: partitionMx, separateMx
 
-(-#-) :: Num a => TridiagMatrix a -> (BKey,BKey) -> a
+(-#-) :: Num a => TridiagMatrix a -> (VKey,VKey) -> a
 m -#- (r,c)
     | dia > err     = error "Out of bound"
     | abs dia > 1   = 0
@@ -79,21 +79,21 @@ m -#- (r,c)
             e   = max r c - abs dia
             err = dim m - 1
 
-diag :: TridiagMatrix a -> BKey -> BandVector a
-diag (TDM (_,b,_))  0     = BV b
-diag (TDM (a,_,_)) (-1)   = BV a
-diag (TDM (_,_,c))  1     = BV c
+diag :: TridiagMatrix a -> VKey -> Vector a
+diag (TDM (_,b,_))  0     = VV b
+diag (TDM (a,_,_)) (-1)   = VV a
+diag (TDM (_,_,c))  1     = VV c
 diag _ _ = undefined
 
-(-!-) :: TridiagMatrix a -> BKey -> BandVector a
+(-!-) :: TridiagMatrix a -> VKey -> Vector a
 m -!- k = diag m k
 
-row :: Num a => TridiagMatrix a -> BKey -> BandVector a
-row m i = bandList $ map (\j -> m -#- (i,j)) [1..n]
+row :: Num a => TridiagMatrix a -> VKey -> Vector a
+row m i = vecList $ map (\j -> m -#- (i,j)) [1..n]
     where   n = dim m
 
-col :: Num a => TridiagMatrix a -> BKey -> BandVector a
-col m j = bandList $ map (\i -> m -#- (i,j)) [1..n]
+col :: Num a => TridiagMatrix a -> VKey -> Vector a
+col m j = vecList $ map (\i -> m -#- (i,j)) [1..n]
     where   n = dim m
 
 -- TODO: update, erase
@@ -105,11 +105,11 @@ diagonalMx l = TDM (d0,listArray (1,n) l,d0)
     where   n   = L.length l
             d0  = listArray (1,n-1) $ repeat 0
 
-mainDiag :: TridiagMatrix a -> BandVector a
+mainDiag :: TridiagMatrix a -> Vector a
 mainDiag = (-!- 0)
 
 fromDiags :: Num a 
-    => (BandVector a,BandVector a,BandVector a) -> TridiagMatrix a
+    => (Vector a,Vector a,Vector a) -> TridiagMatrix a
 fromDiags m@(_,bv,_) = TDM
         (listArray (1,n-1) al
         ,listArray (1,n)   bl
@@ -118,7 +118,7 @@ fromDiags m@(_,bv,_) = TDM
             n       = max 3 n'
             (al,bl,cl)  = mapTDMx fillVec m
 
-fromBand :: Num a => BKey -> (a,a,a) -> TridiagMatrix a
+fromBand :: Num a => VKey -> (a,a,a) -> TridiagMatrix a
 fromBand n (a,b,c) = TDM
         (listArray (1,n-1) $ repeat a
         ,listArray (1,n)   $ repeat b
@@ -133,12 +133,12 @@ trans (TDM (a,b,c)) = TDM (c,b,a)
 
 -- TODO: mulVM
 
-mulMV :: Num a => TridiagMatrix a -> BandVector a -> BandVector a
+mulMV :: Num a => TridiagMatrix a -> Vector a -> Vector a
 m `mulMV` v
     | dim m /= vecLength v = error $
             "mulMV: dimension error, dim m = " ++ show (dim m) ++ ", dim v = "
             ++ show (vecLength v)
-    | otherwise = bandList l
+    | otherwise = vecList l
     where   entry' i    = sum $ L.zipWith (*) ms vs
                 where   ms  = map (\j -> m -#- (i,j)) [a..b]
                         vs  = map (\j -> v Vector.! j) [a..b]
@@ -146,7 +146,7 @@ m `mulMV` v
                         b   = min (dim m) (i + 1)
             l           = L.map entry' [1..(dim m)]
 
-(-*) :: Num a => TridiagMatrix a -> BandVector a -> BandVector a
+(-*) :: Num a => TridiagMatrix a -> Vector a -> Vector a
 (-*) = mulMV
 
 mulSM :: Num a => a -> TridiagMatrix a -> TridiagMatrix a
@@ -184,8 +184,8 @@ m1 `mul` m2
             h       = listArray (1,n) $ map mkH [1..n]
             j       = listArray (1,n-1) $ map mkJ [1..(n-1)]
 
-solve :: (Num a,Fractional a) => TridiagMatrix a -> BandVector a -> BandVector a
-solve m b = bandList x
+solve :: (Num a,Fractional a) => TridiagMatrix a -> Vector a -> Vector a
+solve m b = vecList x
     where   n   = dim m
             aa  = vec $ m -!- (-1)
             ba  = vec $ m -!- 0

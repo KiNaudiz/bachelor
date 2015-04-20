@@ -1,21 +1,16 @@
+module Test
+where
+
 import CN
+import CNTypes
 import Plot
 import Data.Complex
 import Graphics.Gnuplot.Simple
 import Graphics.Gnuplot.Value.Tuple
 import Vector
-import Tridiag
 import Text.Printf
 import File
 import System.Process
-
-main :: IO ()
--- main = harmOszSphere
--- main = hydrogen
-main = do
-        _ <- harmOszSphere
-        -- _ <- harmOsz
-        return ()
 
 harmOszSphere :: IO (Waveset Double)
 harmOszSphere = do

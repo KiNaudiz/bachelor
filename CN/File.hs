@@ -1,7 +1,7 @@
 module File
 where
 
-import CN
+import CNTypes
 import Vector
 
 writeWaveset :: Show a => Waveset a -> FilePath -> IO ()

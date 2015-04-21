@@ -3,6 +3,8 @@ where
 
 import Data.Array.Unboxed
 import Data.Array.Base as A ((!))
+import Data.Monoid
+import Control.Arrow
 import Vector
 
 type VMKey = (Int,Int)
@@ -33,12 +35,25 @@ cols vm = vecList rows'
                 | otherwise = vm # (i,j) : mkCol (i+1) j
             rows'       = map (vecList . mkCol 1) [1..ydim]
 
--- TODO: improve, too slow
+fromRows :: Vector (Vector a) -> ValueMatrix a
+fromRows vecs = VM $ listArray ((1,1),(xdim,ydim)) vals
+    where   xdim    = vecLength vecs
+            ydim    = vecLength $ vecs Vector.! 1
+            vals    = mconcat $ map fillVec $ fillVec vecs
+
+fromCols :: Vector (Vector a) -> ValueMatrix a
+fromCols vecs = transpose $ VM $ listArray ((1,1),(ydim,xdim)) vals
+    where   ydim    = vecLength vecs
+            xdim    = vecLength $ vecs Vector.! 1
+            vals    = mconcat $ map fillVec $ fillVec vecs
+
+transpose :: ValueMatrix a -> ValueMatrix a
+transpose vm = VM $ array ((1,1),dim vm) l
+    where   l           = map (first inv') $ assocs $ vmat vm
+            inv' (a,b)  = (b,a) 
+
 dim :: ValueMatrix a -> VMKey
-dim vm = (xdim,ydim)
-    where   keys    = indices $ vmat vm
-            xdim    = maximum $ map fst keys
-            ydim    = maximum $ map snd keys
+dim = snd . bounds . vmat
 
 instance (Show a, Eq a) => Show (ValueMatrix a) where
     show = show . rows

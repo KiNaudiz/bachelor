@@ -34,10 +34,7 @@ instance (Show a, Eq a) => Show (Vector a) where
     show = show . fillVec
 
 vecLength :: Vector a -> VKey
-vecLength v = u - l + 1
-    where   idx = indices $ vec v
-            u   = L.maximum idx
-            l   = L.minimum idx
+vecLength = snd . bounds . vec
 
 setLength :: (Num a) => VKey -> Vector a -> Vector a
 setLength n v = v { vec = newvec }

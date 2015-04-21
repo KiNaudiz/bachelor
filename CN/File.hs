@@ -2,6 +2,7 @@ module File
 where
 
 import CNTypes
+import CN
 import Vector
 
 writeWaveset :: Show a => Waveset a -> FilePath -> IO ()
@@ -21,3 +22,9 @@ readWaveset filename = do
             ws          = read ws'-- :: [[a]]
         return $ Waveset (map vecList ws) dx dt x0
 
+-- wanted format: t x Re(psi) Im(psi)
+writeWavesetGnuplot :: (Show a) => Waveset a -> FilePath -> IO String
+writeWavesetGnuplot filename = do
+        -- let ws = show $ map
+        -- return str
+        undefined

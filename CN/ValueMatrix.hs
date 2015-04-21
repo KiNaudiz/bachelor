@@ -48,9 +48,10 @@ fromCols vecs = transpose $ VM $ listArray ((1,1),(ydim,xdim)) vals
             vals    = mconcat $ map fillVec $ fillVec vecs
 
 transpose :: ValueMatrix a -> ValueMatrix a
-transpose vm = VM $ array ((1,1),dim vm) l
+transpose vm = VM $ array ((1,1),dim') l
     where   l           = map (first inv') $ assocs $ vmat vm
             inv' (a,b)  = (b,a) 
+            dim'        = (\(x,y) -> (y,x)) $ dim vm
 
 dim :: ValueMatrix a -> VMKey
 dim = snd . bounds . vmat

@@ -5,75 +5,14 @@ import Data.Complex
 import Tridiag
 import Vector
 import CNTypes
-
-hbar :: (Fractional a) => a
-hbar = 0.6582119 -- µeV ns
-
-potentialMtx :: (RealFloat a) => System a -> a -> Operator a
-potentialMtx sys dx =
-        diagonalMx diag'
-    where   diag'   = map (\x -> pot x :+ 0) xs
-            n       = waveEntries (x0,xe) dx
-            xs      = take n [x0 + dx * fromInteger h | h <- [0..]]
-            (x0,xe) = sysInterval sys
-            pot     = sysPotential sys
-
-couplingMtx :: (RealFloat a)
-    => System a -> ( a -> Wavepoint a -> a ) -> Wave a -> a -> Operator a
-couplingMtx sys coupl wave dx =
-        diagonalMx diag'
-    where   diag'       = map (\(x,psi) -> couplConst * coupl x psi :+ 0) xpsi
-            n           = waveEntries (x0,xe) dx
-            xpsi        = zip xs $ fillVec wave
-            xs          = take n
-                [x0 + dx * fromInteger h | h <- [0..]]
-            (x0,xe)     = sysInterval sys
-            couplConst  = sysCoupling sys
-
--- karth coupling
-couplKarth :: (RealFloat a) => a -> Wavepoint a -> a
-couplKarth _ phi = magnitude phi ** 2
-
--- spherical coupling
-couplSphere :: (RealFloat a) => a -> Wavepoint a -> a
-couplSphere r phi
-    | r == 0    = error "couplSphere: singularity"
-    | otherwise = magnitude phi ** 2 / r**2
-
-diffMtx :: RealFloat a => VKey -> Operator a
-diffMtx n = fromBand n (1,-2,1)
+import CNBase
+import Coupling
 
 renderWave :: (RealFloat a) => (a -> Wavepoint a) -> Interval a -> a -> Wave a
 renderWave wave0 int@(x0,_) dx =
         vecList $ map wave0 xs
     where   n   = waveEntries int dx
             xs  = [x0 + fromIntegral m*dx | m <- [0..n-1]]
-
-waveEntries :: (RealFrac a) => Interval a -> a -> Int
-waveEntries (x0,xe) dx = ceiling $ (xe-x0)/dx + 1
-
--- cn' :: (RealFloat a)
---     => System a -> Wave a -> ( a -> Wavepoint a -> a ) -> a -> a -> Waveset a
--- cn' system wave0 coupl dx dt =
---         Waveset waves dx dt x0
---     where
---         waves       = iterate timestep wave0
---         i           = 0:+1
---         hbar_c      = hbar :+ 0
---         m_c         = sysMass system :+ 0
---         dx_c        = dx :+ 0
---         dt_c        = dt :+ 0
---         int@(x0,_)  = sysInterval system
---         pot         = potentialMtx system dx
---         n           = waveEntries int dx
---         dmtx        = diffMtx n
---         mmtx        = idMx n  + ((1/12) .** dmtx)
---         timestep w' = solve lmx b
---             where   b       = (mmtx -* w') - (lmx' -* w')
---                     lmx'    = (i*dt_c/2)
---                             .** (mmtx `mul` pot' - ((hbar_c**2/(2*dx_c**2*m_c)) .** dmtx))
---                     lmx     = mmtx + lmx'
---                     pot'    = pot + couplingMtx system coupl w' dx
 
 effPot :: (RealFloat a)
     => System a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
@@ -161,13 +100,6 @@ cnSphere system wave0 dx dt =
             p0'     = renderWave p0 int dx
             res'    = cn' system p0' couplSphere dx dt
             waves0' = backtransSphere res'
-
-takeSteps :: Int -> Waveset a -> Waveset a
-takeSteps i (Waveset ws dx dt x0) = Waveset (take i ws) dx dt x0
-
-takeTil :: RealFrac a => a -> Waveset a -> Waveset a
-takeTil a wset = takeSteps i wset
-    where i = ceiling $ a/wsetDt wset + 1
 
 energy :: (RealFloat a) => System a -> a -> Wave a -> a
 energy sys dx wave = e * dx

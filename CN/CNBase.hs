@@ -1,0 +1,22 @@
+module CNBase
+where
+
+import CNTypes
+import Tridiag
+import Vector
+
+hbar :: (Fractional a) => a
+hbar = 0.6582119 -- µeV ns
+
+diffMtx :: RealFloat a => VKey -> Operator a
+diffMtx n = fromBand n (1,-2,1)
+
+waveEntries :: (RealFrac a) => Interval a -> a -> Int
+waveEntries (x0,xe) dx = ceiling $ (xe-x0)/dx + 1
+
+takeSteps :: Int -> Waveset a -> Waveset a
+takeSteps i (Waveset ws dx dt x0) = Waveset (take i ws) dx dt x0
+
+takeTil :: RealFrac a => a -> Waveset a -> Waveset a
+takeTil a wset = takeSteps i wset
+    where i = ceiling $ a/wsetDt wset + 1

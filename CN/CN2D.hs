@@ -6,7 +6,7 @@ import CNTypes
 import CNBase
 import ValueMatrix
 import Tridiag
-import Vector
+-- import Vector
 import Data.Complex
 import Control.Applicative
 

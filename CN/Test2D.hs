@@ -5,6 +5,7 @@ import CN2D
 import CNTypes
 import CNBase
 import Data.Complex
+import Plot2D
 
 harmOsz2D :: IO (Waveset2D Double)
 harmOsz2D = do

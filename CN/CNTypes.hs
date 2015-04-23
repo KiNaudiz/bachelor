@@ -10,6 +10,7 @@ type Interval a = (a,a)
 type Potential a = ( a -> a )
 type Wavepoint a = Complex a
 type Wave a = Vector (Wavepoint a)
+type Coupling a = a -> Wavepoint a -> a
 
 type Operator a = TridiagMatrix (Complex a)
 
@@ -34,6 +35,7 @@ data Waveset a =
 type Interval2D a = ((a,a),(a,a))
 type Potential2D a = ( (a,a) -> a )
 type Wave2D a = ValueMatrix (Wavepoint a)
+type Coupling2D a = (a,a) -> Wavepoint a -> a
 
 data System2D a =
     System2D

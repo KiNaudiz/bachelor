@@ -4,6 +4,7 @@ where
 import Data.Array.Base
 import CNTypes
 import CNBase
+import Coupling
 import ValueMatrix
 import Tridiag
 -- import Vector
@@ -39,8 +40,8 @@ cn2DkinStepY sys dy dt wave =
 cn2DkinStepX sys dx dt = transpose . cn2DkinStepY sys dx dt . transpose
 
 cn2D' :: (RealFloat a)
-    => System2D a -> (a,a) -> a -> Wave2D a -> Waveset2D a
-cn2D' sys dr@(dx,dy) dt wave0 =
+    => System2D a -> (a,a) -> a -> Coupling2D a -> Wave2D a -> Waveset2D a
+cn2D' sys dr@(dx,dy) dt coupl wave0 =
         Waveset2D (iterate timestep wave0) dr dt r0
     where
         (r0,_)          = sys2DInterval sys
@@ -56,19 +57,19 @@ cn2D' sys dr@(dx,dy) dt wave0 =
 
         applyKin        =   cn2DkinStepY sys dy dt
                           . cn2DkinStepX sys dx dt
-        applyHPot       = cn2DhpotStep sys dr dt
+        applyHPot       = cn2DhpotStep sys dr dt coupl
 
--- effPot2D :: (RealFloat a)
---     => System2D a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
--- effPot2D system coupl x phi = sysPotential system x
---     + sysCoupling system * coupl x phi
+effPot2D :: (RealFloat a)
+    => System2D a -> ( (a,a) -> Wavepoint a -> a ) -> (a,a) -> Wavepoint a -> a
+effPot2D system coupl r phi = sys2DPotential system r
+    + sys2DCoupling system * coupl r phi
 
 cn2DhpotStep :: (RealFloat a)
-    => System2D a -> (a,a) -> a -> Wave2D a -> Wave2D a -> Wave2D a
-cn2DhpotStep sys (dx,dy) dt wave_p wave =
+    => System2D a -> (a,a) -> a -> Coupling2D a -> Wave2D a -> Wave2D a -> Wave2D a
+cn2DhpotStep sys (dx,dy) dt coupl wave_p wave =
         VM $ array (bounds $ vmat wave) res
     where   vals        = assocs $ vmat wave_p
-            pot r _     = sys2DPotential sys r -- TODO
+            pot         = effPot2D sys coupl
             vals'       =
                 map (uncurry (cn2DapplyHalfPot pot dt) . first mkR) vals
             ((x0,y0),_) = sys2DInterval sys
@@ -103,6 +104,6 @@ renderWave2D (r0,re) (dx,dy) wave0 =
 cn2D :: (RealFloat a)
     => System2D a -> (a,a) -> a -> ((a,a) -> Wavepoint a) -> Waveset2D a
 cn2D system dr dt wave0 =
-        cn2D' system dr dt wave0'
+        cn2D' system dr dt coupl2DKarth wave0'
     where   int     = sys2DInterval system
             wave0'  = renderWave2D int dr wave0

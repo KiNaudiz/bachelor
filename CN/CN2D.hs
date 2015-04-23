@@ -9,6 +9,7 @@ import Tridiag
 -- import Vector
 import Data.Complex
 import Control.Applicative
+import Control.Arrow
 
 sndDiffKarthDx,sndDiffKarthDy :: (RealFloat a) => a -> Wave2D a -> Wave2D a
 sndDiffKarthDy dy wave =
@@ -44,8 +45,7 @@ cn2D' sys dr@(dx,dy) dt wave0 =
     where
         (r0,_)          = sys2DInterval sys
 
-        -- timestep' p'    = applHPot p' . applKin . applHPot p'
-        timestep' _     = applyKin
+        timestep' p'     = applyHPot p' . applyKin . applyHPot p'
 
         -- -- predictor CN avg
         -- timestep  w     = timestep' p' w
@@ -56,6 +56,34 @@ cn2D' sys dr@(dx,dy) dt wave0 =
 
         applyKin        =   cn2DkinStepY sys dy dt
                           . cn2DkinStepX sys dx dt
+        applyHPot       = cn2DhpotStep sys dr dt
+
+-- effPot2D :: (RealFloat a)
+--     => System2D a -> ( a -> Wavepoint a -> a ) -> a -> Wavepoint a -> a
+-- effPot2D system coupl x phi = sysPotential system x
+--     + sysCoupling system * coupl x phi
+
+cn2DhpotStep :: (RealFloat a)
+    => System2D a -> (a,a) -> a -> Wave2D a -> Wave2D a -> Wave2D a
+cn2DhpotStep sys (dx,dy) dt wave_p wave =
+        VM $ array (bounds $ vmat wave) res
+    where   vals        = assocs $ vmat wave_p
+            pot r _     = sys2DPotential sys r -- TODO
+            vals'       =
+                map (uncurry (cn2DapplyHalfPot pot dt) . first mkR) vals
+            ((x0,y0),_) = sys2DInterval sys
+            mkR (i,j)   = (x0+fromIntegral i*dx,y0+fromIntegral j*dy)
+            res         = zipWith (\x (i,y) -> (i,x*y)) vals'
+                $ assocs $ vmat wave
+
+cn2DapplyHalfPot :: (RealFloat a)
+    => ((a,a) -> Wavepoint a -> a) -> a -> (a,a) -> Wavepoint a -> Wavepoint a
+cn2DapplyHalfPot pot dt r phi =
+        exp(-i * dt_c * v / ( 2 * hbar_c ))
+    where   v   = pot r phi :+ 0
+            i   = 0:+1
+            hbar_c  = hbar :+ 0
+            dt_c    = dt :+ 0
 
 renderWave2D :: (RealFloat a)
     => Interval2D a -> (a,a) -> ((a,a) -> Wavepoint a) -> Wave2D a

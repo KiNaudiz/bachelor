@@ -35,6 +35,7 @@ plotWave2D (x0,y0) (dx,dy) opt wave =
                 applyOpts opt)
             (surface ([1..nx]::[Int]) ([1..ny]::[Int])
                 (curry (magnitude . (#) wave)))
+                -- (curry (phase . (#) wave)))
     where (nx,ny) = dim wave
 
 applyOpt :: (Show x,Graphics.Gnuplot.Value.Tuple.C x, Graphics.Gnuplot.Value.Atom.C x)

@@ -30,3 +30,7 @@ plotManyComplex a fname l x0 dt dx = p l 0
             -- plotComplex [PNG ("output/plot"++show t),Title ("t="++show t++"ns"),XLabel="x/us",YLabel="phi"] lh dx
             plotComplex (a ++ [Key Nothing,PNG ("output/"++fname++printf "%07.3f" t++".png"),Title ("t="++printf "%07.3f" t++"ns")]) lh x0 dx
             p ll (t+dt)
+
+plotOverTime :: (Graphics.Gnuplot.Value.Tuple.C a,Num a)
+    => [Attribute] -> a -> [a] -> IO ()
+plotOverTime attr dt = plotList attr . addPar dt 0

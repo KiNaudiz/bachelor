@@ -6,23 +6,20 @@ import CNTypes
 import CNBase
 import Data.Complex
 import Plot2D
+import Plot
+import Properties
 
 harmOsz2D :: IO (Waveset2D Double)
 harmOsz2D = do
         let
---             psi0Norm    = density dx
---                         $ renderWave psi0Form int dx
---             psi0    = (* ((pnum/psi0Norm) :+0)) . psi0Form
-            psi0    = psi0Form
+            psi0Norm    = density2Dkarth dr
+                        $ renderWave2D int dr psi0Form
+            psi0    = (* (sqrt (pnum/psi0Norm) :+0)) . psi0Form
             waveT   = takeTil2D 40 $ cn2D sys dr dt psi0
---             title = "harmpot/data_norm_coupl_split_dx" ++ printf "%.4f" dx
---                     ++ "_dt" ++ printf "%.3f" dt
---         _ <- createProcess $ shell $ "mkdir -p output/" ++ title
-        -- plotWaveset waveT (-5,5) (-0.1,1.1) $ title ++ "/"
-        plotWaveset2D "output/2Dtest/" [CBRange (0,2)] waveT
---         writeWaveset waveT $ "output/" ++ title ++ ".dat"
---         _ <- plotEnergy sys waveT $ title ++ "/"
---         _ <- plotDensity waveT $ title ++ "/"
+        -- _ <- plotWaveset2D "output/2Dtest/" [CBRange (0,2)] waveT
+        -- _ <- plotWaveset2D "output/2Dtest/" [] waveT
+        -- plotOverTime [] dt $ map (density2Dkarth dr) $ wset2DWaves waveT
+        plotOverTime [] dt $ map (energy2D sys dr) $ wset2DWaves waveT
         return waveT
 
 m,a,g :: Double

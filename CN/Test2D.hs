@@ -19,7 +19,9 @@ harmOsz2D = do
         -- _ <- plotWaveset2D "output/2Dtest/" [CBRange (0,2)] waveT
         -- _ <- plotWaveset2D "output/2Dtest/" [] waveT
         -- plotOverTime [] dt $ map (density2Dkarth dr) $ wset2DWaves waveT
-        plotOverTime [] dt $ map (energy2D sys dr) $ wset2DWaves waveT
+        -- plotOverTime [] dt $ map (energy2D sys dr) $ wset2DWaves waveT
+        print $ map (energy2D sys dr) $ wset2DWaves waveT
+        -- print $ map (density2Dkarth dr) $ wset2DWaves waveT
         return waveT
 
 m,a,g :: Double

@@ -14,9 +14,12 @@ import Control.Arrow
 
 sndDiffKarthDx,sndDiffKarthDy :: (RealFloat a) => a -> Wave2D a -> Wave2D a
 sndDiffKarthDy dy wave =
-        fmap (/(dy:+0)**2) $ fromRows $ (diff' -*) <$> rows wave
+        fmap (/(dy:+0)**2) $ fromRows $! (diff' -*) <$> rows wave
     where   diff' = diffMtx $ snd $ ValueMatrix.dim wave
-sndDiffKarthDx dx = transpose . sndDiffKarthDx dx . transpose
+-- sndDiffKarthDx dx = transpose . sndDiffKarthDx dx . transpose
+sndDiffKarthDx dx wave =
+        fmap (/(dx:+0)**2) $ fromCols $! (diff' -*) <$> cols wave
+    where   diff' = diffMtx $ fst $ ValueMatrix.dim wave
 
 cn2DkinStepX,cn2DkinStepY :: (RealFloat a)
     => System2D a -> a -> a -> Wave2D a -> Wave2D a

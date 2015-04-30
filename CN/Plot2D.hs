@@ -23,6 +23,7 @@ data PlotOption a =
         | ZRange (a,a)
         -- | Ratio Double
         | CBRange (a,a)
+        | CBLog
 
 plotWave2D ::   (Show a,Graphics.Gnuplot.Value.Tuple.C a
                 ,Graphics.Gnuplot.Value.Atom.C a, RealFloat a, PrintfArg a)
@@ -44,6 +45,8 @@ applyOpt (XRange int)       = xRange3d int
 applyOpt (YRange int)       = yRange3d int
 applyOpt (ZRange int)       = zRange3d int
 -- applyOpt (Ratio r)          = sizeSquare
+applyOpt (CBLog)  =
+        add (custom "logscale" "") ["cb"]
 applyOpt (CBRange (z0,ze))  =
         add (custom "cbrange" "") ["[" ++ show z0 ++ ":" ++ show ze ++ "]"]
 

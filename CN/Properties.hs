@@ -15,7 +15,7 @@ import CNBase
 import Coupling
 
 densityKarth :: RealFloat a => a -> Wave a -> a
-densityKarth dx = (*dx) . sum . map ((**2) . magnitude) . fillVec
+densityKarth = (. (sum . map ((** 2) . magnitude) . fillVec)) . (*)
 
 density2Dkarth :: RealFloat a => (a,a) -> Wave2D a -> a
 density2Dkarth (dx,dy) = (*dy) . sum . fillVec . fmap (densityKarth dx) . cols

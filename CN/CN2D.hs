@@ -42,14 +42,18 @@ cn2DkinStepY sys dy dt wave =
                     lmx     = mmtx - lmx'
 cn2DkinStepX sys dx dt = transpose . cn2DkinStepY sys dx dt . transpose
 
+-- TODO: Add subdivide
 cn2D' :: (RealFloat a)
-    => System2D a -> (a,a) -> a -> Coupling2D a -> Wave2D a -> Waveset2D a
-cn2D' sys dr@(dx,dy) dt coupl wave0 =
-        Waveset2D (iterate timestep wave0) dr dt r0
+    => Int -> System2D a -> (a,a) -> a -> Coupling2D a -> Wave2D a -> Waveset2D a
+cn2D' subdiv sys dr@(dx,dy) dt' coupl wave0 =
+        Waveset2D (iterate nts wave0) dr dt' r0
     where
+        n               = 2^subdiv
+        dt              = dt'/fromIntegral n
         (r0,_)          = sys2DInterval sys
 
-        timestep' p'     = applyHPot p' . applyKin . applyHPot p'
+        timestep' p'    = applyHPot p' . applyKin . applyHPot p'
+        nts w           = iterate timestep w !! n
 
         -- -- predictor CN avg
         -- timestep  w     = timestep' p' w
@@ -105,8 +109,8 @@ renderWave2D (r0,re) (dx,dy) wave0 =
                                     + fromIntegral (my'-1)*dy))) ns
 
 cn2D :: (RealFloat a)
-    => System2D a -> (a,a) -> a -> ((a,a) -> Wavepoint a) -> Waveset2D a
-cn2D system dr dt wave0 =
-        cn2D' system dr dt coupl2DKarth wave0'
+    => Int -> System2D a -> (a,a) -> a -> ((a,a) -> Wavepoint a) -> Waveset2D a
+cn2D subdiv system dr dt wave0 =
+        cn2D' subdiv system dr dt coupl2DKarth wave0'
     where   int     = sys2DInterval system
             wave0'  = renderWave2D int dr wave0

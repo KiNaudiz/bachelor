@@ -77,17 +77,19 @@ cn2DhpotStep sys (dx,dy) dt coupl wave_p wave =
         VM $ array (bounds $ vmat wave) res
     where   vals        = assocs $ vmat wave_p
             pot         = effPot2D sys coupl
+            drain       = sys2DDrain sys
             vals'       =
-                map (uncurry (cn2DapplyHalfPot pot dt) . first mkR) vals
+                map (uncurry (cn2DapplyHalfPot drain pot dt) . first mkR) vals
             ((x0,y0),_) = sys2DInterval sys
             mkR (i,j)   = (x0+fromIntegral i*dx,y0+fromIntegral j*dy)
             res         = zipWith (\x (i,y) -> (i,x*y)) vals'
                 $ assocs $ vmat wave
 
 cn2DapplyHalfPot :: (RealFloat a)
-    => ((a,a) -> Wavepoint a -> a) -> a -> (a,a) -> Wavepoint a -> Wavepoint a
-cn2DapplyHalfPot pot dt r phi =
-        exp(-i * dt_c * v / ( 2 * hbar_c ))
+    => a -> ((a,a) -> Wavepoint a -> a) -> a -> (a,a) -> Wavepoint a
+    -> Wavepoint a
+cn2DapplyHalfPot drain pot dt r phi =
+        exp(-dt_c/2 * (i * v / hbar_c + 1/(drain:+0)))
     where   v   = pot r phi :+ 0
             i   = 0:+1
             hbar_c  = hbar :+ 0

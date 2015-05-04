@@ -44,6 +44,7 @@ data System2D a =
       , sys2DMass :: a
       , sys2DPotential :: Potential2D a
       , sys2DCoupling :: a
+      , sys2DDrain :: a
     }
 
 data Waveset2D a =

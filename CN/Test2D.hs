@@ -16,7 +16,9 @@ harmOsz2D = do
                         $ renderWave2D int dr $ normalForm psigma pmu
             psi0    = (* (sqrt (pnum/pnnorm) :+0)) . normalForm psigma pmu
             waveT   = takeTil2D 40 $ cn2D subdiv sys dr dt psi0
-        _ <- plotWaveset2D "output/2Dtest/testplot3/" [CBRange (0,40)] waveT
+        _ <- plotWaveset2D "output/2Dtest/testplot4/"
+            [CBRange (0,40),Grid]
+            waveT
         -- _ <- plotWaveset2D "output/2Dtest/" [] waveT
         plotOverTime [] dt $ map (density2Dkarth dr) $ wset2DWaves waveT
         plotOverTime [] dt $ map (energy2D sys dr) $ wset2DWaves waveT
@@ -34,9 +36,11 @@ u :: Potential2D Double
 u r@(x,y) = a*(x**2+y**2) + g * magnitude ( cond r )
 int :: Interval2D Double
 int = ((-15,-15),(15,15))
+drain :: Double
+drain = 5
 
 sys :: System2D Double
-sys = System2D int m u g
+sys = System2D int m u g drain
 
 subdiv :: Int
 subdiv = 2

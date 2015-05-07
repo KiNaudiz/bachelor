@@ -21,6 +21,7 @@ data PlotOption a =
           XRange (Int,Int)
         | YRange (Int,Int)
         | ZRange (a,a)
+        | XYRange ((a,a),(a,a)) (a,a)
         -- | Ratio Double
         | CBRange (a,a)
         | CBLog

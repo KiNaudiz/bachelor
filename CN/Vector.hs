@@ -78,7 +78,7 @@ vecList l = VV $ listArray (1,n) l
     where   n = length l
 
 dot :: Num a => Vector a -> Vector a -> a
-v `dot` w   = L.sum $ elems $ vec $ Vector.zipWith (*) v w
+v `dot` w   = L.sum $ L.zipWith (*) (fillVec v) (fillVec w)
 
 (·) :: Num a => Vector a -> Vector a -> a
 (·) = dot

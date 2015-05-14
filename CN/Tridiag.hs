@@ -15,7 +15,7 @@ mapTDMx :: (a -> b) -> (a,a,a) -> (b,b,b)
 mapTDMx f (a,b,c) = (f a,f b,f c)
 
 data TridiagMatrix a = TDM
-    { mx :: TDMx a } deriving Eq
+    { mx :: !(TDMx a) } deriving Eq
 
 instance Functor TridiagMatrix where
     fmap f m    = m { mx = mapTDMx (amap f) $ mx m }

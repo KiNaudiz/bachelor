@@ -1,17 +1,23 @@
 module ValueMatrix
 where
 
-import Data.Array.Unboxed
+import Data.Array.IArray
 import Data.Array.Base as A ((!))
 import Data.Monoid
-import Control.Arrow
+import Data.Tuple
 import Vector
+
+import Control.DeepSeq.Generics
 
 type VMKey = (Int,Int)
 type VMat a = Array VMKey a
 
 data ValueMatrix a = VM
-    { vmat :: VMat a } deriving Eq
+    { vmat :: !(VMat a) } -- deriving Eq
+
+-- TODO: newtype
+instance NFData a => NFData (ValueMatrix a)
+        where rnf (VM arr) = rnf arr
 
 instance Functor ValueMatrix where
     fmap f vm   = vm { vmat = amap f (vmat vm) }
@@ -48,10 +54,8 @@ fromCols vecs = transpose $ VM $ listArray ((1,1),(ydim,xdim)) vals
             vals    = mconcat $ map fillVec $ fillVec vecs
 
 transpose :: ValueMatrix a -> ValueMatrix a
-transpose vm = VM $ array ((1,1),dim') l
-    where   l           = map (first inv') $ assocs $ vmat vm
-            inv' (a,b)  = (b,a) 
-            dim'        = (\(x,y) -> (y,x)) $ dim vm
+transpose vm = VM $ ixmap ((1,1),dim') swap $ vmat vm
+    where   dim' = swap $ dim vm
 
 dim :: ValueMatrix a -> VMKey
 dim = snd . bounds . vmat

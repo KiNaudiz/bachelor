@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 module CN2D
 where
 
@@ -11,6 +12,8 @@ import Tridiag
 import Data.Complex
 import Control.Applicative
 import Control.Arrow
+
+import Control.DeepSeq.Generics
 
 sndDiffKarthDx,sndDiffKarthDy :: (RealFloat a) => a -> Wave2D a -> Wave2D a
 sndDiffKarthDy dy wave =
@@ -36,14 +39,13 @@ cn2DkinStepY sys dy dt wave =
         n               = waveEntries int dy
         dmtx            = diffMtx n
         mmtx            = idMx n + ((1/12) .** dmtx)
-        applKin w'  = solve lmx b
+        applKin !w'  = solve lmx b
             where   b       = (mmtx -* w') + (lmx' -* w')
                     lmx'    = (i*dt_c*hbar_c/(4*m_c*dy_c**2)) .** dmtx
                     lmx     = mmtx - lmx'
 cn2DkinStepX sys dx dt = transpose . cn2DkinStepY sys dx dt . transpose
 
--- TODO: Add subdivide
-cn2D' :: (RealFloat a)
+cn2D' :: (RealFloat a,NFData a)
     => Int -> System2D a -> (a,a) -> a -> Coupling2D a -> Wave2D a -> Waveset2D a
 cn2D' subdiv sys dr@(dx,dy) dt' coupl wave0 =
         Waveset2D (iterate nts wave0) dr dt' r0
@@ -52,15 +54,15 @@ cn2D' subdiv sys dr@(dx,dy) dt' coupl wave0 =
         dt              = dt'/fromIntegral n
         (r0,_)          = sys2DInterval sys
 
-        timestep' p'    = applyHPot p' . applyKin . applyHPot p'
-        nts w           = iterate timestep w !! n
+        timestep'  p'   = applyHPot p' . applyKin . applyHPot p'
+        nts  w          = iterate timestep w !! n
 
         -- -- predictor CN avg
         -- timestep  w     = timestep' p' w
         --     where   p'  = 0.5 .* (timestep' w w + w)
 
         -- no predictor
-        timestep  w     = timestep' w w
+        timestep  w     = deepseq w (timestep' w w)
 
         applyKin        =   cn2DkinStepY sys dy dt
                           . cn2DkinStepX sys dx dt
@@ -110,7 +112,7 @@ renderWave2D (r0,re) (dx,dy) wave0 =
                         (i,wave0 (fst r0 + fromIntegral (mx'-1)*dx,snd r0
                                     + fromIntegral (my'-1)*dy))) ns
 
-cn2D :: (RealFloat a)
+cn2D :: (RealFloat a,NFData a)
     => Int -> System2D a -> (a,a) -> a -> ((a,a) -> Wavepoint a) -> Waveset2D a
 cn2D subdiv system dr dt wave0 =
         cn2D' subdiv system dr dt coupl2DKarth wave0'

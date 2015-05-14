@@ -15,15 +15,17 @@ harmOsz2D = do
             pnnorm  = density2Dkarth dr
                         $ renderWave2D int dr $ normalForm psigma pmu
             psi0    = (* (sqrt (pnum/pnnorm) :+0)) . normalForm psigma pmu
+            -- waveT   = takeTil2D 40 $ cn2D subdiv sys dr dt psi0
             waveT   = takeTil2D 40 $ cn2D subdiv sys dr dt psi0
         _ <- plotWaveset2D "output/2Dtest/testplot8/"
-            [CBRange (0,80),Grid]
+            [CBRange (0,40),Grid]
             waveT
         -- _ <- plotWaveset2D "output/2Dtest/" [] waveT
-        plotOverTime [] dt $ map (density2Dkarth dr) $ wset2DWaves waveT
-        plotOverTime [] dt $ map (energy2D sys dr) $ wset2DWaves waveT
+        -- plotOverTime [] dt $ map (density2Dkarth dr) $ wset2DWaves waveT
+        -- plotOverTime [] dt $ map (energy2D sys dr) $ wset2DWaves waveT
         -- print $ map (energy2D sys dr) $ wset2DWaves waveT
         -- print $ map (density2Dkarth dr) $ wset2DWaves waveT
+        -- print $ wset2DWaves waveT
         return waveT
 
 m,a,g :: Double
@@ -43,7 +45,7 @@ sys :: System2D Double
 sys = System2D int m u g drain
 
 subdiv :: Int
-subdiv = 2
+subdiv = 3
 
 psigma :: Double
 psigma  = 0.5
@@ -55,7 +57,7 @@ cmu :: (Double,Double)
 cmu     = (0,0)
 
 pnum,cnum :: Double
-pnum    = 5000
+pnum    = 500
 -- cnum    = pnum * 100
 cnum    = 100000
 
@@ -70,6 +72,6 @@ normalForm sigma (mux,muy) (x,y)  =
 
 dx,dt :: Double
 dx      = 0.1
-dt      = 0.5
+dt      = 1
 dr :: (Double,Double)
 dr = (dx,dx)
